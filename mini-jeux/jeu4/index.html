@@ -92,7 +92,7 @@
                     joueur.</div>
             </div>
             <div class="hud">
-                <span class="pill">Énergie: <b id="energy">0</b>/50</span>
+                <span class="pill">Énergie: <b id="energy">0</b></span>
                 <span class="pill">Case survolée: <b id="hovered">-</b></span>
                 <span class="pill">Case sélectionnée: <b id="selected">-</b></span>
                 <button id="toggleEdit">Mode édition: OFF</button>
@@ -119,13 +119,14 @@
             const btnReset = document.getElementById("reset");
 
             let gameOver = false;
+            let gameWon = false;
             let gameOverMsg = "";
 
             const energyUI = document.getElementById("energy");
 
             const ENERGY = {
                 collected: 0,
-                goal: 50,
+                goal: 12,
                 nodeId: null,   // case où se trouve le module
             };
 
@@ -190,6 +191,9 @@
                 nodes = initialNodes.map(n => ({ ...n }));
                 initPlayer();
                 initKaiju();
+                ENERGY.collected = 0;
+                energyUI.textContent = "0";
+                spawnEnergyModule();
             }
 
             // ====== Helpers ======
@@ -217,6 +221,39 @@
             }
 
             function getNode(id) { return nodes.find(n => n.id === id); }
+
+
+            //Fonction pour faire apparaître un module sur une case aléatoire
+            function randomInt(max) { return Math.floor(Math.random() * max); }
+
+            function spawnEnergyModule() {
+                let newId;
+
+                do {
+                    newId = nodes[Math.floor(Math.random() * nodes.length)].id;
+                } while (
+                    newId === ENERGY.nodeId ||   // pas la même case
+                    newId === playerNodeId       // pas sous le joueur
+                );
+
+                ENERGY.nodeId = newId;
+            }
+
+            function collectEnergyIfOnNode() {
+                if (ENERGY.nodeId === null || gameWon) return;
+
+                if (playerNodeId === ENERGY.nodeId) {
+                    ENERGY.collected++;
+                    energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
+
+                    if (ENERGY.collected >= ENERGY.goal) {
+                        gameWon = true;
+                        endMsg = `Bravo 🎉 Tu as collecté ${ENERGY.collected} modules d'énergie !`;
+                    } else {
+                        spawnEnergyModule(); // 🔁 change vraiment de case
+                    }
+                }
+            }
 
             // ====== JOUEUR ======
             let playerNodeId = 1;
@@ -800,7 +837,7 @@
                 const dt = Math.min(0.033, (now - lastTime) / 1000);
                 lastTime = now;
 
-                if (gameOver) return;
+                if (gameOver || gameWon) return;
                 // ===== BOMBE AUTO =====
                 bombTimer -= dt;
                 if (bombTimer <= 0) {
@@ -827,6 +864,8 @@
                         playerPos.x = playerTarget.x;
                         playerPos.y = playerTarget.y;
                         isMoving = false;
+
+                        collectEnergyIfOnNode(); //l'energi collecter
                     } else {
                         playerPos.x += (dx / dist) * step;
                         playerPos.y += (dy / dist) * step;
@@ -902,13 +941,39 @@
                     ctx.fillText(String(n.id), n.x, n.y);
                 }
 
-                // Kaiju (simple rond violet)
-                //effacer
+                function drawEnergyModule() {
+                    if (ENERGY.nodeId === null) return;
+                    const n = getNode(ENERGY.nodeId);
+                    if (!n) return;
+
+                    // halo
+                    ctx.fillStyle = "rgba(0,255,160,0.25)";
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, NODE_RADIUS + 18, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // module (petit losange)
+                    ctx.fillStyle = "#00ff9a";
+                    ctx.beginPath();
+                    ctx.moveTo(n.x, n.y - 16);
+                    ctx.lineTo(n.x + 16, n.y);
+                    ctx.lineTo(n.x, n.y + 16);
+                    ctx.lineTo(n.x - 16, n.y);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // petit reflet
+                    ctx.fillStyle = "rgba(255,255,255,0.6)";
+                    ctx.beginPath();
+                    ctx.arc(n.x - 6, n.y - 6, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 drawBorderWarning(); // warning AU-DESSUS du terrain
                 drawFireball();      // boule AU-DESSUS
                 drawBombWarning();
                 drawBombExplosion();
                 drawKaiju();
+                drawEnergyModule();
 
 
                 // joueur (dessiné au-dessus)
@@ -946,20 +1011,29 @@
                     ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 24);
                 }
                 //jeu terminer
-                if (gameOver) {
+                if (gameOver || gameWon) {
                     ctx.fillStyle = "rgba(0,0,0,0.45)";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                     ctx.fillStyle = "#fff";
-                    ctx.font = "bold 48px system-ui";
+                    ctx.font = "bold 52px system-ui";
                     ctx.textAlign = "center";
-                    ctx.fillText("T'AS PERDU", canvas.width / 2, canvas.height / 2 - 10);
+
+                    ctx.fillText(
+                        gameWon ? "TU AS GAGNÉ !" : "T'AS PERDU",
+                        canvas.width / 2,
+                        canvas.height / 2 - 15
+                    );
 
                     ctx.font = "18px system-ui";
                     ctx.fillStyle = "rgba(255,255,255,0.9)";
-                    ctx.fillText(gameOverMsg, canvas.width / 2, canvas.height / 2 + 28);
+                    ctx.fillText(endMsg, canvas.width / 2, canvas.height / 2 + 22);
 
-                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 60);
+                    ctx.fillText(
+                        "Appuie sur R pour recommencer",
+                        canvas.width / 2,
+                        canvas.height / 2 + 55
+                    );
                 }
 
                 requestAnimationFrame(draw);
@@ -1058,6 +1132,8 @@
             setEditMode(false);
             initPlayer();
             initKaijuSpawnSystem();
+            energyUI.textContent = "0";
+            spawnEnergyModule();
             draw();
         })();
 
