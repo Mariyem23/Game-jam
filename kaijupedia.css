@@ -13,8 +13,8 @@
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
 
   /* Navigateur “réel” */
-  --chromeTop-h: 44px;   /* onglets + boutons fenêtre sur la même ligne */
-  --browserbar-h: 56px;  /* barre d'adresse */
+  --chromeTop-h: 44px; /* onglets + boutons fenêtre sur la même ligne */
+  --browserbar-h: 56px; /* barre d'adresse */
 }
 
 * {
@@ -38,7 +38,6 @@ body {
     #050505;
   color: var(--ink);
   font-family: var(--serif);
-
   /* IMPORTANT : tout passe sous les 2 lignes navigateur */
   padding-top: calc(var(--chromeTop-h) + var(--browserbar-h));
 }
@@ -58,7 +57,11 @@ body {
   gap: 12px;
 
   padding: 8px 10px 0;
-  background: linear-gradient(to bottom, rgba(20, 20, 20, 0.92), rgba(10, 10, 10, 0.86));
+  background: linear-gradient(
+    to bottom,
+    rgba(20, 20, 20, 0.92),
+    rgba(10, 10, 10, 0.86)
+  );
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
 }
@@ -95,8 +98,6 @@ body {
   opacity: 0.8;
 }
 
-
-
 .chromeTop__tabs {
   display: flex;
   align-items: flex-end;
@@ -121,7 +122,13 @@ body {
   padding: 0 10px;
   border-radius: 10px 10px 0 0;
 
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.78);
 
@@ -165,7 +172,13 @@ body {
   background: rgba(0, 0, 0, 0.35);
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
   font-size: 14px;
 }
 
@@ -186,7 +199,11 @@ body {
   height: var(--browserbar-h);
   z-index: 9999;
 
-  background: linear-gradient(to bottom, rgba(20, 20, 20, 0.9), rgba(10, 10, 10, 0.84));
+  background: linear-gradient(
+    to bottom,
+    rgba(20, 20, 20, 0.9),
+    rgba(10, 10, 10, 0.84)
+  );
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
 }
@@ -230,7 +247,13 @@ body {
   gap: 8px;
   padding: 0 12px;
 
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.75);
   overflow: hidden;
@@ -313,7 +336,8 @@ body {
 
 /* ===================== Hero ===================== */
 .hero {
-  min-height: 100vh;
+  min-height: 300px;
+  max-height: 550px;
   background-image:
     radial-gradient(
       ellipse at center,
@@ -326,24 +350,28 @@ body {
   background-position: top center;
   background-repeat: no-repeat;
   display: flex;
-  align-items: center;
+  bottom: 20%;
+  align-items: flex-start;
   justify-content: center;
   text-align: center;
+  padding-top: 150px;
 }
 
 .hero__overlay {
   min-height: 78vh;
   display: flex;
   padding: 58px 18px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   text-align: center;
+  width: 100%;
 }
 
 .hero__frame::before {
   content: "";
   position: absolute;
   inset: 14px;
+  top: 20%;
   border-radius: calc(var(--radius) - 8px);
   pointer-events: none;
 }
@@ -427,8 +455,16 @@ body {
   inset: 0;
   border-radius: 14px;
   background:
-    radial-gradient(40px 18px at 12px 50%, rgba(0, 0, 0, 0.18), transparent 60%),
-    radial-gradient(40px 18px at calc(100% - 12px) 50%, rgba(0, 0, 0, 0.18), transparent 60%),
+    radial-gradient(
+      40px 18px at 12px 50%,
+      rgba(0, 0, 0, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      40px 18px at calc(100% - 12px) 50%,
+      rgba(0, 0, 0, 0.18),
+      transparent 60%
+    ),
     linear-gradient(
       to right,
       rgba(255, 255, 255, 0.06),
@@ -454,7 +490,7 @@ body {
 .btn--primary {
   background: linear-gradient(to bottom, #9d3a26, #6f2418);
   color: #f2e8d5;
-  border-color: rgba(0,  0, 0, 0.35);
+  border-color: rgba(0, 0, 0, 0.35);
 }
 
 .btn--primary:hover {
@@ -519,7 +555,11 @@ body {
 .card {
   padding: 18px 16px;
   border-radius: var(--radius);
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.78));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.78)
+  );
   border: 1px solid rgba(200, 160, 110, 0.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
@@ -573,7 +613,11 @@ body {
   border-radius: var(--radius);
   padding: 20px 18px;
   border: 1px solid rgba(200, 160, 110, 0.2);
-  background: linear-gradient(to right, rgba(140, 47, 31, 0.18), rgba(0, 0, 0, 0.6));
+  background: linear-gradient(
+    to right,
+    rgba(140, 47, 31, 0.18),
+    rgba(0, 0, 0, 0.6)
+  );
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -592,3 +636,23 @@ body {
   color: rgba(231, 220, 199, 0.6);
   text-align: center;
 }
+
+.hero {
+  position: relative; /* ✅ zone de déplacement */
+  overflow: hidden; /* ✅ évite qu'il sorte visuellement */
+}
+
+#archivesBtn {
+  position: absolute; /* ✅ bouge dans la hero */
+  left: 50%;
+  bottom: 10%; /* départ bottom center dans la hero */
+  transform: translateX(-50%);
+  z-index: 10;
+
+  transition:
+    left 0.2s ease,
+    top 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
