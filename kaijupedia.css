@@ -73,6 +73,29 @@ body {
 
   color: rgba(255, 255, 255, 0.75);
 }
+.nav a {
+  position: relative;
+  padding: 0 18px;
+}
+
+/* Image séparatrice */
+.nav a:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 18px;
+  height: 18px;
+
+  background-image: url("./images/sep.png"); /* 👈 ton image */
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+}
+
+
 
 .chromeTop__tabs {
   display: flex;
