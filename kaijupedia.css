@@ -38,9 +38,15 @@ body {
 
 /* Top bar */
 .topbar {
+  height: 60px;
   position: sticky;
-  top: 0;
+  top: var(--winbar-h);
   z-index: 20;
+
+  display: flex;          /* ✅ manquait */
+  align-items: center;    /* ✅ centre verticalement */
+  justify-content: center;
+
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.88),
@@ -48,26 +54,23 @@ body {
   );
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(8px);
-  top: var(--winbar-h); /* au lieu de top: 0 */
-}
-.topbar__inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
 }
 
-.brand {
-  font-family: var(--title);
-  letter-spacing: 3px;
-  font-size: 12px;
-  opacity: 0.9;
+.topbar__inner {
+  height: 100%;           /* ✅ prend toute la hauteur de la topbar */
+  display: flex;
+  align-items: center;    /* ✅ centre verticalement le contenu */
+  justify-content: center;
+  gap: 26px;
+
+  margin: 0 auto;
+  padding: 0 18px;        /* ✅ pas de padding vertical */
+  max-width: none;
 }
+
 .nav {
   display: flex;
+  align-items: center;    /* ✅ centre les liens */
   gap: 26px;
 }
 .nav a {
@@ -111,7 +114,7 @@ body {
     ),
     url("./images/background3.png");
 
-  background-size: 1200px;
+  background-size: 1300px;
   background-position: top center;
   background-repeat: no-repeat;
   display: flex;
@@ -202,7 +205,7 @@ body {
   color: #f1e6cf;
   text-decoration: none;
 
-  background-color: #5c291f;
+  background-image: url("./images/bckgrd4.jpeg");
 
   position: relative;
   text-shadow: none;
