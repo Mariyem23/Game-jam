@@ -11,4 +11,18 @@ body {
 #game {
   width: 100vw;
   height: 100vh;
+  position: relative; /* IMPORTANT pour que la vidéo se cale dedans */
+  overflow: hidden;
+}
+
+/* Vidéo overlay */
+#introVideo {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: black;
+  z-index: 10; /* au-dessus du canvas */
 }

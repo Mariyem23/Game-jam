@@ -3,45 +3,16 @@ class LoginScene extends Phaser.Scene {
     super("Login");
     this.SECRET = "来たれ、荒ぶる妖";
     this.progress = 0;
-    this.showPlain = false; // œil OFF au début
   }
-playIntroVideo() {
-  const video = document.getElementById("introVideo");
-
-  if (!video) return;
-
-  // Affiche la vidéo
-  video.style.display = "block";
-
-  // Plein écran si possible
-  if (video.requestFullscreen) {
-    video.requestFullscreen().catch(() => {});
-  }
-
-  video.currentTime = 0;
-  video.play();
-
-  // Quand la vidéo est finie
-  video.onended = () => {
-    video.style.display = "none";
-
-    // Quitter le fullscreen
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-
-    console.log("VIDEO FINIE");
-    // 👉 ici tu pourras lancer la scène Kaiju
-    // this.scene.start("Game");
-  };
-}
 
   create() {
     const { width, height } = this.scale;
 
+    // Fond plein écran
     this.bg = this.add.rectangle(0, 0, width, height, 0x0b0b0f).setOrigin(0);
     this.glow = this.add.circle(width * 0.6, height * 0.45, Math.min(width, height) * 0.25, 0x2a5cff, 0.12);
 
+    // UI centrée
     this.ui = this.add.container(width / 2, height / 2);
 
     this.avatarStroke = this.add.circle(0, -120, 50, 0xffffff, 0.15).setStrokeStyle(2, 0xffffff, 0.18);
@@ -54,10 +25,8 @@ playIntroVideo() {
     }).setOrigin(0.5);
 
     const html = `
-      <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
-
+      <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <!-- IMPORTANT : type text pour pouvoir afficher les kanjis -->
           <input id="pwd" type="text" placeholder="Mot de passe"
             style="
               width: 360px;
@@ -72,17 +41,6 @@ playIntroVideo() {
               letter-spacing: 1px;
             "
           />
-
-          <button id="eye"
-            style="
-              height: 40px; width: 44px; border-radius: 6px;
-              border: 1px solid rgba(255,255,255,0.18);
-              background: rgba(255,255,255,0.12);
-              color: white; font-size: 18px; cursor: pointer;
-            "
-            title="Afficher / cacher"
-          >👁</button>
-
           <button id="go"
             style="
               height: 40px; width: 44px; border-radius: 6px;
@@ -112,56 +70,51 @@ playIntroVideo() {
 
     const root = this.form.node;
     this.pwdInput = root.querySelector("#pwd");
-    this.eyeBtn = root.querySelector("#eye");
     this.msgLine = root.querySelector("#msg");
 
-    // Empêche l’utilisateur de sélectionner/coller
+    // Empêche l’utilisateur de coller et d’écrire librement
     this.pwdInput.setAttribute("autocomplete", "off");
     this.pwdInput.setAttribute("spellcheck", "false");
 
     // Affichage initial
     this.updateInputDisplay();
 
-    // À chaque touche : on avance d’un caractère de la phrase
+    // À chaque touche : on avance dans la phrase
     this.pwdInput.addEventListener("keydown", (e) => {
-      // Entrée = valider
       if (e.key === "Enter") {
         e.preventDefault();
         this.tryLogin();
         return;
       }
 
-      // Backspace = reculer
       if (e.key === "Backspace") {
         e.preventDefault();
         this.backOneChar();
         return;
       }
 
-      // Ignore les touches non "caractère"
+      // Ignore les touches non-caractères
       if (e.key.length !== 1) return;
 
-      // Toute frappe = avancer
+      // Toute frappe = avancer d’un caractère
       e.preventDefault();
       this.advanceOneChar();
     });
 
-    // Click boutons
+    // Click bouton ➜
     root.addEventListener("click", (e) => {
       const t = e.target;
       if (!t) return;
-      if (t.id === "eye") this.toggleEye();
       if (t.id === "go") this.tryLogin();
     });
 
-    // Resize
+    // Resize responsive
     this.scale.on("resize", this.onResize, this);
     this.onResize({ width, height });
 
     this.pwdInput.focus();
   }
 
-  // Ajoute un caractère du mot de passe
   advanceOneChar() {
     if (this.progress >= this.SECRET.length) return;
     this.progress++;
@@ -169,7 +122,6 @@ playIntroVideo() {
     this.msgLine.textContent = "";
   }
 
-  // Enlève un caractère
   backOneChar() {
     if (this.progress <= 0) return;
     this.progress--;
@@ -177,44 +129,59 @@ playIntroVideo() {
     this.msgLine.textContent = "";
   }
 
-  // œil : show/hide
-  toggleEye() {
-    this.showPlain = !this.showPlain;
-    this.eyeBtn.textContent = this.showPlain ? "🙈" : "👁";
-    this.updateInputDisplay();
-    this.pwdInput.focus();
-  }
-
-  // Met à jour ce qui est affiché DANS L'INPUT
   updateInputDisplay() {
     const revealed = this.SECRET.slice(0, this.progress);
-
-    // si œil ON => on montre les kanjis dans l'input
-    if (this.showPlain) {
-      this.pwdInput.value = revealed;
-    } else {
-      // œil OFF => on masque par des points
-      this.pwdInput.value = "•".repeat(revealed.length);
-    }
+    this.pwdInput.value = revealed;
 
     // curseur en fin
     this.pwdInput.setSelectionRange(this.pwdInput.value.length, this.pwdInput.value.length);
   }
 
   tryLogin() {
-  if (this.progress !== this.SECRET.length) {
-    this.msgLine.textContent = "Déchiffrement incomplet…";
-    this.cameras.main.shake(140, 0.005);
-    return;
+    if (this.progress !== this.SECRET.length) {
+      this.msgLine.textContent = "Déchiffrement incomplet…";
+      this.cameras.main.shake(140, 0.005);
+      return;
+    }
+
+    this.msgLine.textContent = "";
+    this.cameras.main.flash(180, 255, 255, 255);
+
+    // 🎬 lance la vidéo dans la fenêtre du jeu
+    this.playIntroVideo();
   }
 
-  this.msgLine.textContent = "";
-  this.cameras.main.flash(180, 255, 255, 255);
+  playIntroVideo() {
+    const video = document.getElementById("introVideo");
+    const gameDiv = document.getElementById("game");
 
-  // 🎬 LANCE LA VIDÉO
-  this.playIntroVideo();
-}
+    if (!video || !gameDiv) {
+      console.error("Video ou #game introuvable");
+      return;
+    }
 
+    // Important : s'assurer que la vidéo est dans #game
+    gameDiv.appendChild(video);
+
+    video.style.display = "block";
+    video.currentTime = 0;
+
+    // pause l'UI derrière si tu veux (optionnel)
+    // this.scene.pause();
+
+    video.play().catch((err) => {
+      console.error("Erreur lecture vidéo:", err);
+      // Si ça bloque encore, enlève "muted" dans HTML et clique sur Play manuellement
+    });
+
+    video.onended = () => {
+      video.style.display = "none";
+      console.log("VIDEO FINIE");
+
+      // Ici tu pourras lancer ta scène Kaiju
+      // this.scene.start("Game");
+    };
+  }
 
   onResize(gameSize) {
     const w = gameSize.width;
@@ -224,6 +191,7 @@ playIntroVideo() {
     this.glow.setPosition(w * 0.6, h * 0.45);
     this.ui.setPosition(w / 2, h / 2);
 
+    // responsive scale UI
     const baseW = 1920;
     const baseH = 1080;
     const scale = Math.min(w / baseW, h / baseH);
@@ -236,7 +204,11 @@ const config = {
   type: Phaser.AUTO,
   parent: "game",
   backgroundColor: "#000000",
-  scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
   dom: { createContainer: true },
   scene: [LoginScene],
 };
