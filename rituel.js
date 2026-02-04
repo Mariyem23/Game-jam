@@ -8,8 +8,8 @@ class RituelScene extends Phaser.Scene {
     this.phase = 1;
 
     // phase 1
-    this.glyphCount = 6;
-    this.seqLength = 4;
+    this.glyphCount = 7;
+    this.seqLength = 5;
 
     // phase 2
     this.holdDuration = 2400;   // ms à tenir appuyé
@@ -18,7 +18,10 @@ class RituelScene extends Phaser.Scene {
     this.sealsToClick = 5;
   }
 
+
   create() {
+  console.log("Kaiju loaded:", this.textures.exists("kaiju_front"));
+
     const { width, height } = this.scale;
 
     this.stability = this.maxStability;
@@ -72,20 +75,28 @@ class RituelScene extends Phaser.Scene {
     this.ritual.add(this.ringGfx);
 
     // ===== KAIJU SILHOUETTE =====
-    this.kaiju = this.add.container(this.center.x, this.center.y);
-    this.kaijuGfx = this.add.graphics();
-    this.kaiju.add(this.kaijuGfx);
-    this.drawKaiju();
+    this.kaiju = this.add.sprite(
+  this.center.x,
+  this.center.y,
+  "kaiju_front"
+);
 
-    // pulsation kaiju (inquiétant)
+this.kaiju.setOrigin(0.5, 0.5);
+this.kaiju.setScale(0.6);
+this.kaiju.setAlpha(0.85);
+this.kaiju.setDepth(-1); // derrière les glyphes
+
+
     this.tweens.add({
-      targets: this.kaiju,
-      scale: { from: 1.0, to: 1.03 },
-      duration: 650,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
+  targets: this.kaiju,
+  scale: { from: 0.62, to: 0.58 },
+  duration: 2200,
+  yoyo: true,
+  repeat: -1,
+  ease: "Sine.easeInOut",
+});
+
+
 
     // ===== PHASE CONTAINER (change selon phase) =====
     this.phaseLayer = this.add.container(0, 0);
@@ -134,36 +145,29 @@ class RituelScene extends Phaser.Scene {
     this.ringGfx.fillCircle(0, 0, r * 0.68);
   }
 
-  drawKaiju() {
+ drawKaiju() {
   this.kaijuGfx.clear();
 
-  const baseAlpha = 0.35;
+  const alpha = 0.45;
 
-  // corps principal
-  this.kaijuGfx.fillStyle(0x000000, baseAlpha);
-  this.kaijuGfx.fillCircle(0, 0, 70);
+  // masse centrale
+  this.kaijuGfx.fillStyle(0x000000, alpha);
+  this.kaijuGfx.fillCircle(0, 0, 140);
 
-  // bosses organiques
-  this.kaijuGfx.fillCircle(-40, -20, 35);
-  this.kaijuGfx.fillCircle(45, -10, 28);
-  this.kaijuGfx.fillCircle(-10, 45, 30);
+  // extensions organiques (irrégulier)
+  this.kaijuGfx.fillCircle(-90, -40, 80);
+  this.kaijuGfx.fillCircle(110, -20, 70);
+  this.kaijuGfx.fillCircle(-40, 110, 75);
 
-  // contour
-  this.kaijuGfx.lineStyle(2, 0xffb3b3, 0.12);
-  this.kaijuGfx.strokeCircle(0, 0, 70);
+  // aura interne
+  this.kaijuGfx.fillStyle(0x110000, 0.25);
+  this.kaijuGfx.fillCircle(0, 0, 160);
 
-  // pics dorsaux
-  this.kaijuGfx.fillStyle(0x000000, baseAlpha + 0.08);
-  for (let i = 0; i < 5; i++) {
-    const x = -40 + i * 20;
-    const y = -70 - Phaser.Math.Between(0, 20);
-    this.kaijuGfx.fillTriangle(x, y, x + 10, y - 30, x + 20, y);
-  }
-
-  // œil
-  this.kaijuGfx.fillStyle(0xff3b3b, 0.12);
-  this.kaijuGfx.fillCircle(15, -10, 8);
+  // contour instable
+  this.kaijuGfx.lineStyle(3, 0x8c2f1f, 0.25);
+  this.kaijuGfx.strokeCircle(0, 0, 150);
 }
+
 
 
   updateStats() {
@@ -246,15 +250,18 @@ class RituelScene extends Phaser.Scene {
 
       const t = this.add.text(x, y, chosen[i], {
         fontFamily: "Arial",
-        fontSize: "40px",
+        fontSize: "64px",
         color: "rgba(255,220,220,0.85)",
       }).setOrigin(0.5);
 
       // “pastille”
-      const bg = this.add.circle(x, y, 34, 0x000000, 0.30)
-        .setStrokeStyle(2, 0xffd0d0, 0.10);
+      const bg = this.add.circle(x, y, 52, 0x000000, 0.45)
+  .setStrokeStyle(3, 0x8c2f1f, 0.25);
 
-      const hit = this.add.circle(x, y, 40, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+
+const hit = this.add.circle(x, y, 70, 0xffffff, 0.001)
+  .setDepth(10)
+  .setInteractive({ useHandCursor: true });
 
       this.phaseLayer.add([bg, t, hit]);
 
@@ -278,15 +285,17 @@ class RituelScene extends Phaser.Scene {
       this.bindPhase1Clicks();
     });
   }
-
-  playSequenceFlash(done) {
+playSequenceFlash(done) {
     const flashes = [];
-
     const getGlyphByChar = (c) => this.glyphs.find(g => g.char === c);
 
     let delay = 0;
+    
+    // On calcule la durée totale pour savoir quand rendre la main au joueur
     this.sequence.forEach((c, idx) => {
       const g = getGlyphByChar(c);
+      
+      // On ajoute l'animation
       flashes.push(this.time.delayedCall(delay, () => {
         if (!g) return;
 
@@ -301,10 +310,20 @@ class RituelScene extends Phaser.Scene {
         // mini flash sur le cercle
         this.cameras.main.flash(35, 120, 20, 20);
       }));
-      delay += 420;
+      
+      // On incrémente le délai pour la prochaine lettre
+      delay += 900;
     });
 
-    this.time.delayedCall(delay + 200, () => done && done());
+    this.setMessage("…");
+
+    // === C'EST ICI QU'IL MANQUAIT LE CODE ===
+    // On attend la fin du dernier délai + un petit temps de pause (ex: 800ms)
+    // pour appeler "done" et rendre la main au joueur.
+    this.time.delayedCall(delay, () => {
+        this.setMessage("Répétez la séquence.");
+        if (done) done(); // <--- CA C'EST CRUCIAL !
+    });
   }
 
   bindPhase1Clicks() {
@@ -320,11 +339,15 @@ class RituelScene extends Phaser.Scene {
 
         // feedback click
         this.tweens.add({
-          targets: g.bg,
-          alpha: { from: 0.30, to: 0.55 },
-          duration: 80,
-          yoyo: true,
-        });
+  targets: [g.text, g.bg],
+  alpha: { from: 0.15, to: 1 },
+  scale: { from: 1.3, to: 1 },
+  duration: 600,
+  yoyo: true,
+  repeat: 0,
+  ease: "Sine.easeInOut",
+});
+
 
         if (g.char !== expected) {
           const dead = this.applyFail();

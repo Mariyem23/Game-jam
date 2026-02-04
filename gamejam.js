@@ -5,11 +5,19 @@ class LoginScene extends Phaser.Scene {
     this.progress = 0;
   }
 
+  // 1. AJOUT DU PRELOAD POUR CHARGER L'IMAGE
+  preload() {
+    this.load.image("login_bg", "assets/images/login.jpeg");
+  }
+
   create() {
     const { width, height } = this.scale;
 
-    // Fond plein écran
-    this.bg = this.add.rectangle(0, 0, width, height, 0x0b0b0f).setOrigin(0);
+    // 2. REMPLACEMENT DU FOND : Image au lieu de Rectangle
+    // On la place au centre (width/2, height/2) avec une origine au centre (0.5)
+    this.bg = this.add.image(width / 2, height / 2, "login_bg").setOrigin(0.5);
+
+    // (Le reste de tes éléments décoratifs)
     this.glow = this.add.circle(
       width * 0.6,
       height * 0.45,
@@ -82,44 +90,34 @@ class LoginScene extends Phaser.Scene {
     this.pwdInput = root.querySelector("#pwd");
     this.msgLine = root.querySelector("#msg");
 
-    // Empêche l’utilisateur de coller et d’écrire librement
     this.pwdInput.setAttribute("autocomplete", "off");
     this.pwdInput.setAttribute("spellcheck", "false");
-
-    // Affichage initial
     this.updateInputDisplay();
 
-    // À chaque touche : on avance dans la phrase
     this.pwdInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         this.tryLogin();
         return;
       }
-
       if (e.key === "Backspace") {
         e.preventDefault();
         this.backOneChar();
         return;
       }
-
-      // Ignore les touches non-caractères
       if (e.key.length !== 1) return;
-
-      // Toute frappe = avancer d’un caractère
       e.preventDefault();
       this.advanceOneChar();
     });
 
-    // Click bouton ➜
     root.addEventListener("click", (e) => {
       const t = e.target;
       if (!t) return;
       if (t.id === "go") this.tryLogin();
     });
 
-    // Resize responsive
     this.scale.on("resize", this.onResize, this);
+    // Appel initial pour caler l'image
     this.onResize({ width, height });
 
     this.pwdInput.focus();
@@ -142,25 +140,20 @@ class LoginScene extends Phaser.Scene {
   updateInputDisplay() {
     const revealed = this.SECRET.slice(0, this.progress);
     this.pwdInput.value = revealed;
-
-    // curseur en fin
-    this.pwdInput.setSelectionRange(
-      this.pwdInput.value.length,
-      this.pwdInput.value.length,
-    );
+    this.pwdInput.setSelectionRange(this.pwdInput.value.length, this.pwdInput.value.length);
   }
 
   tryLogin() {
-  if (this.progress !== this.SECRET.length) {
-    this.msgLine.textContent = "Déchiffrement incomplet…";
-    this.cameras.main.shake(140, 0.005);
-    return;
-  }
+    if (this.progress !== this.SECRET.length) {
+      this.msgLine.textContent = "Déchiffrement incomplet…";
+      this.cameras.main.shake(140, 0.005);
+      return;
+    }
 
     this.msgLine.textContent = "";
     this.cameras.main.flash(180, 255, 255, 255);
-    this.scene.start("Wiki", { invocation: pwd });
-    // 🎬 lance la vidéo dans la fenêtre du jeu
+    // Attention: pwd n'était pas défini dans ton code original, j'imagine que tu voulais passer 'this.pwdInput.value' ou rien
+    this.scene.start("Wiki"); 
     this.playIntroVideo();
   }
 
@@ -173,60 +166,47 @@ class LoginScene extends Phaser.Scene {
       return;
     }
 
-    // Important : s'assurer que la vidéo est dans #game
     gameDiv.appendChild(video);
-
     video.style.display = "block";
     video.currentTime = 0;
 
-    // pause l'UI derrière si tu veux (optionnel)
-    // this.scene.pause();
-
     video.play().catch((err) => {
       console.error("Erreur lecture vidéo:", err);
-      // Si ça bloque encore, enlève "muted" dans HTML et clique sur Play manuellement
     });
-video.onended = () => {
-  video.style.display = "none";
-  console.log("VIDEO FINIE");
 
-  // ➜ redirection vers la page Kaijupedia
-  window.location.href = "kaijupedia.html";
-};
-
-
+    video.onended = () => {
+      video.style.display = "none";
+      console.log("VIDEO FINIE");
+      window.location.href = "kaijupedia.html";
+    };
   }
 
+  // 3. MISE A JOUR DU RESIZE POUR L'IMAGE
   onResize(gameSize) {
     const w = gameSize.width;
     const h = gameSize.height;
 
-    this.bg.setSize(w, h);
-    this.glow.setPosition(w * 0.6, h * 0.45);
-    this.ui.setPosition(w / 2, h / 2);
+    // Gestion du fond d'écran "Cover" (remplit tout sans déformer)
+    if (this.bg) {
+        this.bg.setPosition(w / 2, h / 2);
+        
+        // On calcule quel ratio utiliser pour couvrir tout l'écran
+        const scaleX = w / this.bg.width;
+        const scaleY = h / this.bg.height;
+        const scale = Math.max(scaleX, scaleY);
+        
+        this.bg.setScale(scale);
+    }
 
-    // responsive scale UI
-    const baseW = 1920;
-    const baseH = 1080;
-    const scale = Math.min(w / baseW, h / baseH);
-    const uiScale = Phaser.Math.Clamp(scale * 1.2, 0.75, 1.15);
-    this.ui.setScale(uiScale);
+    // Le reste de ton UI
+    if (this.glow) this.glow.setPosition(w * 0.6, h * 0.45);
+    if (this.ui) {
+        this.ui.setPosition(w / 2, h / 2);
+        const baseW = 1920;
+        const baseH = 1080;
+        const scaleUI = Math.min(w / baseW, h / baseH);
+        const uiFinalScale = Phaser.Math.Clamp(scaleUI * 1.2, 0.75, 1.15);
+        this.ui.setScale(uiFinalScale);
+    }
   }
 }
-
-
-const config = {
-  type: Phaser.AUTO,
-  parent: "game",
-  backgroundColor: "#000000",
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    width: window.innerWidth,
-    height: window.innerHeight,
-  },
-  dom: { createContainer: true },
-  scene: [LoginScene, RituelScene],
-
-};
-
-new Phaser.Game(config);

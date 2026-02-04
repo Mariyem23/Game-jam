@@ -37,11 +37,11 @@
       <section class="panel" id="panel">
         <div class="panel__head">
           <div class="badge">Console de traduction</div>
-          <div class="kicker">ARCHIVES • FRAGMENT INTERCEPTÉ</div>
-          <h1>DÉCHIFFREMENT</h1>
+          <div class="kicker">ARCHIVES • FRAGMENT INTERCEPTE</div>
+          <h1>DECHIFFREMENT</h1>
           <p class="muted">
-            Associez chaque symbole à une lettre. Le texte se traduit en direct.
-            Quand tout est lisible, devinez le mot-clé.
+            Associez chaque symbole a une lettre. Une lettre se verrouille seulement si elle est correcte.
+            Si le temps tombe a zero, l'interface commencera a perdre le controle.
           </p>
         </div>
 
@@ -50,8 +50,9 @@
           <div class="paper">
             <div class="paper__head">
               <div class="paper__title">
-                FRAGMENT 09 • TEMPS :
+                FRAGMENT 09 • STABILITE :
                 <span id="timer">10:00</span>
+                <span class="phase" id="phaseTag">STABLE</span>
               </div>
 
               <div class="corruption">
@@ -63,7 +64,7 @@
             </div>
 
             <div class="textpane">
-              <div class="textpane__label">TEXTE CHIFFRÉ</div>
+              <div class="textpane__label">TEXTE CHIFFRE</div>
               <pre class="cipher" id="cipherText"></pre>
 
               <div class="divider"></div>
@@ -80,26 +81,27 @@
             <div class="mapping__box">
               <h2>Table des symboles</h2>
               <p class="mapping__hint">
-                Tape une lettre (A–Z). Doublon = rouge. Si validé : verrouillé.
+                Tape une lettre (A–Z). Rouge = faux. Verrouille = correct.
+                (Ordre melange volontairement.)
               </p>
 
               <div class="grid" id="mapGrid"></div>
 
               <div class="guessbox">
-                <label for="guessInput">Mot-clé :</label>
-                <input id="guessInput" type="text" placeholder="…deviner le mot" autocomplete="off" />
+                <label for="guessInput">Mot-cle :</label>
+                <input id="guessInput" type="text" placeholder="..." autocomplete="off" />
                 <button class="btn" id="guessBtn" type="button">Valider</button>
               </div>
 
               <p class="small muted">
-                Conseil : ne devine pas trop tôt. La chose écoute.
+                Conseil : ne devine pas trop tot. La chose ecoute.
               </p>
             </div>
           </aside>
         </div>
       </section>
 
-      <!-- Overlays perte de contrôle -->
+      <!-- Overlays -->
       <div class="glitch" id="glitchLayer" aria-hidden="true"></div>
       <div class="popups" id="popups" aria-hidden="true"></div>
     </main>
