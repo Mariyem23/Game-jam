@@ -1033,15 +1033,15 @@
                 resetPositions();
             });
 
-            // Test clavier: F = horizontal, Shift+F = vertical
             window.addEventListener("keydown", (e) => {
-                if (e.code === "KeyF") {
-                    startFireAttack(e.shiftKey ? "v" : "h");
-                }
-            });
-            window.addEventListener("keydown", (e) => {
-                if (e.code === "KeyB") {
-                    startBombAttack();
+                if (e.code === "KeyR") {
+                    gameOver = false;
+                    gameOverMsg = "";
+                    playerNodeId = 1;
+                    initPlayer();
+                    initKaijuSpawnSystem();
+                    BOMB.state = "idle";
+                    FIRE.state = "idle";
                 }
             });
 
