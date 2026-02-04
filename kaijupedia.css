@@ -11,7 +11,10 @@
 
   --radius: 18px;
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-  --winbar-h: 34px;
+
+  /* Navigateur “réel” */
+  --chromeTop-h: 44px;   /* onglets + boutons fenêtre sur la même ligne */
+  --browserbar-h: 56px;  /* barre d'adresse */
 }
 
 * {
@@ -19,10 +22,12 @@
   margin: 0;
   padding: 0;
 }
+
 html,
 body {
   height: 100%;
 }
+
 body {
   background:
     radial-gradient(
@@ -33,18 +38,197 @@ body {
     #050505;
   color: var(--ink);
   font-family: var(--serif);
-  padding-top: calc(var(--winbar-h) + 0px);
+
+  /* IMPORTANT : tout passe sous les 2 lignes navigateur */
+  padding-top: calc(var(--chromeTop-h) + var(--browserbar-h));
 }
 
-/* Top bar */
+/* ===================== TOP ROW (onglets + boutons fenêtre) ===================== */
+.chromeTop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--chromeTop-h);
+  z-index: 10000;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 8px 10px 0;
+  background: linear-gradient(to bottom, rgba(20, 20, 20, 0.92), rgba(10, 10, 10, 0.86));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+.chromeTop__controls .winbtn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+
+  width: 46px;
+  height: 34px;
+
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.chromeTop__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chromeTop__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* Onglets */
+.tab {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 10px 10px 0 0;
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
+}
+
+.tab--active {
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.tab--ghost {
+  opacity: 0.7;
+  padding: 0 12px;
+}
+
+.tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(42, 92, 255, 0.9);
+  box-shadow: 0 0 14px rgba(42, 92, 255, 0.35);
+}
+
+.tab__close {
+  opacity: 0.7;
+  margin-left: 6px;
+}
+.tab__close:hover {
+  opacity: 1;
+}
+
+/* Boutons fenêtre (— □ ✕) */
+.winbtn {
+  width: 44px;
+  height: 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 14px;
+}
+
+.winbtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.winbtn--close:hover {
+  background: rgba(232, 17, 35, 0.95);
+}
+
+/* ===================== ROW 2 (barre d'adresse) ===================== */
+.browserbar {
+  position: fixed;
+  top: var(--chromeTop-h);
+  left: 0;
+  width: 100%;
+  height: var(--browserbar-h);
+  z-index: 9999;
+
+  background: linear-gradient(to bottom, rgba(20, 20, 20, 0.9), rgba(10, 10, 10, 0.84));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.browserbar__row {
+  height: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+}
+
+.navbtns,
+.tools {
+  display: flex;
+  gap: 8px;
+}
+
+.navbtn {
+  width: 34px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+.navbtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.address {
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.45);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+}
+
+.address .url {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===================== Top bar interne (Origines / …) ===================== */
 .topbar {
+  padding-top: 15px;
   height: 60px;
   position: sticky;
-  top: var(--winbar-h);
+  top: calc(var(--chromeTop-h) + var(--browserbar-h));
   z-index: 20;
 
-  display: flex;          /* ✅ manquait */
-  align-items: center;    /* ✅ centre verticalement */
+  display: flex;
+  align-items: center;
   justify-content: center;
 
   background: linear-gradient(
@@ -57,22 +241,23 @@ body {
 }
 
 .topbar__inner {
-  height: 100%;           /* ✅ prend toute la hauteur de la topbar */
+  height: 100%;
   display: flex;
-  align-items: center;    /* ✅ centre verticalement le contenu */
+  align-items: center;
   justify-content: center;
   gap: 26px;
 
   margin: 0 auto;
-  padding: 0 18px;        /* ✅ pas de padding vertical */
+  padding: 0 18px;
   max-width: none;
 }
 
 .nav {
   display: flex;
-  align-items: center;    /* ✅ centre les liens */
+  align-items: center;
   gap: 26px;
 }
+
 .nav a {
   font-family: var(--title);
   letter-spacing: 2px;
@@ -81,6 +266,7 @@ body {
   text-decoration: none;
   opacity: 0.85;
 }
+
 .nav a:hover {
   opacity: 1;
   color: var(--accent2);
@@ -97,12 +283,12 @@ body {
   font-size: 11px;
   cursor: pointer;
 }
+
 .topbar__cta:hover {
   border-color: rgba(200, 160, 110, 0.45);
 }
 
-/* Hero */
-
+/* ===================== Hero ===================== */
 .hero {
   min-height: 100vh;
   background-image:
@@ -113,13 +299,12 @@ body {
       rgba(0, 0, 0, 0.8) 100%
     ),
     url("./images/background3.png");
-
   background-size: 1300px;
   background-position: top center;
   background-repeat: no-repeat;
   display: flex;
-  align-items: center; /* centre verticalement */
-  justify-content: center; /* centre horizontalement */
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -127,8 +312,8 @@ body {
   min-height: 78vh;
   display: flex;
   padding: 58px 18px;
-  align-items: center; /* centre verticalement */
-  justify-content: center; /* centre horizontalement */
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -149,7 +334,7 @@ body {
 
 .hero__title {
   font-family: "Metal Mania", cursive;
-  font-size: clamp(72px, 9vw, 120px);
+  font-size: 100px;
   letter-spacing: 15px;
   text-transform: uppercase;
   line-height: 0.95;
@@ -159,13 +344,11 @@ body {
 
 .hero__subtitle {
   margin-top: 10px;
-
   text-align: center;
   letter-spacing: 4px;
   font-size: 16px;
   color: var(--accent2);
   text-transform: uppercase;
-
   font-family: "Cinzel", serif;
 }
 
@@ -176,19 +359,7 @@ body {
   justify-content: center;
   flex-wrap: wrap;
 }
-/*.btn {
-  display: inline-flex;
-  align-items: bottom center;
-  justify-content: bottom center;
-  padding: 14px 18px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-family: var(--title);
-  letter-spacing: 2px;
-  font-size: 12px;
-  cursor: pointer;
-  border: 1px solid transparent;
-}*/
+
 .btn-archives {
   display: inline-flex;
   align-items: center;
@@ -209,15 +380,15 @@ body {
 
   position: relative;
   text-shadow: none;
-  border: 1px solid rgba(138, 111, 76, 0.6); /* contour blanc */
+  border: 1px solid rgba(138, 111, 76, 0.6);
 }
+
 .hero__content {
   display: flex;
   flex-direction: column;
-  align-items: center; /* centre chaque élément */
+  align-items: center;
 }
 
-/* petit liseré interne comme sur l’image */
 .btn-archives::before {
   content: "";
   position: absolute;
@@ -227,23 +398,14 @@ body {
   pointer-events: none;
 }
 
-/* effet “usé” discret */
 .btn-archives::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 14px;
   background:
-    radial-gradient(
-      40px 18px at 12px 50%,
-      rgba(0, 0, 0, 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      40px 18px at calc(100% - 12px) 50%,
-      rgba(0, 0, 0, 0.18),
-      transparent 60%
-    ),
+    radial-gradient(40px 18px at 12px 50%, rgba(0, 0, 0, 0.18), transparent 60%),
+    radial-gradient(40px 18px at calc(100% - 12px) 50%, rgba(0, 0, 0, 0.18), transparent 60%),
     linear-gradient(
       to right,
       rgba(255, 255, 255, 0.06),
@@ -269,8 +431,9 @@ body {
 .btn--primary {
   background: linear-gradient(to bottom, #9d3a26, #6f2418);
   color: #f2e8d5;
-  border-color: rgba(0, 0, 0, 0.35);
+  border-color: rgba(0,  0, 0, 0.35);
 }
+
 .btn--primary:hover {
   filter: brightness(1.05);
 }
@@ -284,12 +447,13 @@ body {
   font-size: 14px;
 }
 
-/* Sections */
+/* ===================== Sections ===================== */
 .section {
   max-width: 1100px;
   margin: 0 auto;
   padding: 52px 18px;
 }
+
 .section--thin {
   padding-top: 0;
 }
@@ -300,6 +464,7 @@ body {
   text-transform: uppercase;
   font-size: 18px;
 }
+
 .section__head p {
   margin-top: 8px;
   color: var(--muted);
@@ -312,11 +477,13 @@ body {
   gap: 14px;
   grid-template-columns: repeat(4, 1fr);
 }
+
 @media (max-width: 980px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 @media (max-width: 540px) {
   .grid {
     grid-template-columns: 1fr;
@@ -329,14 +496,11 @@ body {
 .card {
   padding: 18px 16px;
   border-radius: var(--radius);
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.55),
-    rgba(0, 0, 0, 0.78)
-  );
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.78));
   border: 1px solid rgba(200, 160, 110, 0.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+
 .card__top {
   display: flex;
   align-items: center;
@@ -344,12 +508,14 @@ body {
   gap: 10px;
   margin-bottom: 10px;
 }
+
 .card h4 {
   font-family: var(--title);
   letter-spacing: 2px;
   text-transform: uppercase;
   font-size: 14px;
 }
+
 .tag {
   font-family: var(--title);
   font-size: 10px;
@@ -360,11 +526,13 @@ body {
   background: rgba(140, 47, 31, 0.18);
   border: 1px solid rgba(140, 47, 31, 0.35);
 }
+
 .card p {
   color: var(--muted);
   line-height: 1.5;
   min-height: 52px;
 }
+
 .card__link {
   display: inline-block;
   margin-top: 12px;
@@ -372,6 +540,7 @@ body {
   opacity: 0.9;
   text-decoration: none;
 }
+
 .card__link:hover {
   color: var(--accent2);
   opacity: 1;
@@ -381,17 +550,14 @@ body {
   border-radius: var(--radius);
   padding: 20px 18px;
   border: 1px solid rgba(200, 160, 110, 0.2);
-  background: linear-gradient(
-    to right,
-    rgba(140, 47, 31, 0.18),
-    rgba(0, 0, 0, 0.6)
-  );
+  background: linear-gradient(to right, rgba(140, 47, 31, 0.18), rgba(0, 0, 0, 0.6));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
 }
+
 .signal p {
   color: var(--muted);
   margin-top: 6px;
@@ -402,126 +568,4 @@ body {
   border-top: 1px solid var(--line);
   color: rgba(231, 220, 199, 0.6);
   text-align: center;
-}
-
-/* Barre Windows fake */
-.winbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 34px;
-  z-index: 9999;
-  height: var(--winbar-h);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  background-color: #212221;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-
-  padding-left: 10px;
-}
-
-.winbar__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.winbar__icon {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: linear-gradient(
-    to bottom,
-    rgba(180, 90, 60, 0.9),
-    rgba(100, 35, 25, 0.9)
-  );
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.winbar__title {
-  font-family:
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Arial,
-    sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Boutons Windows */
-.winbar__controls {
-  display: flex;
-  height: 100%;
-}
-
-.winbtn {
-  width: 46px;
-  height: 34px;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.winbtn:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.winbtn--close:hover {
-  background: rgba(232, 17, 35, 0.95);
-  color: white;
-}
-
-/* Icônes dessinées en CSS */
-.winbtn--min span {
-  width: 12px;
-  height: 2px;
-  background: currentColor;
-  display: block;
-  transform: translateY(4px);
-}
-
-.winbtn--max span {
-  width: 12px;
-  height: 10px;
-  border: 2px solid currentColor;
-  display: block;
-  box-sizing: border-box;
-}
-
-.winbtn--close span {
-  width: 12px;
-  height: 12px;
-  position: relative;
-  display: block;
-}
-.winbtn--close span::before,
-.winbtn--close span::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 14px;
-  height: 2px;
-  background: currentColor;
-  transform-origin: center;
-}
-.winbtn--close span::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-.winbtn--close span::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
 }
