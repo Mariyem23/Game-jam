@@ -92,6 +92,7 @@
                     joueur.</div>
             </div>
             <div class="hud">
+                <span class="pill">Énergie: <b id="energy">0</b>/50</span>
                 <span class="pill">Case survolée: <b id="hovered">-</b></span>
                 <span class="pill">Case sélectionnée: <b id="selected">-</b></span>
                 <button id="toggleEdit">Mode édition: OFF</button>
@@ -119,6 +120,14 @@
 
             let gameOver = false;
             let gameOverMsg = "";
+
+            const energyUI = document.getElementById("energy");
+
+            const ENERGY = {
+                collected: 0,
+                goal: 50,
+                nodeId: null,   // case où se trouve le module
+            };
 
             let nextFireIn = 2.0; // première attaque après 2 sec
 
