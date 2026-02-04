@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KAIJU — Cadenas de Confinement</title>
+
+    <!-- mêmes polices que Kaijupedia -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="./cadenas.css" />
+  </head>
+
+  <body>
+    <main class="screen">
+      <section class="panel">
+        <div class="panel__head">
+          <div class="badge">Cadenas de Confinement</div>
+          <div class="kicker">NIVEAU — MOYEN</div>
+          <h1>Trouvez la bonne combinaison</h1>
+          <p class="muted">
+            Chaque erreur renforce l’intrusion. Si le système se dérègle… c’est normal.
+          </p>
+        </div>
+
+        <div class="layout">
+          <!-- CADENAS -->
+          <div class="lock">
+            <div class="lock__top">
+              <div class="lock__shackle"></div>
+              <div class="lock__body">
+                <div class="wheels" id="wheels"></div>
+
+                <button class="btn" id="unlockBtn" type="button">
+                  Déverrouiller
+                </button>
+
+                <div class="status" id="statusLine"></div>
+
+                <div class="corruption">
+                  <div class="corruption__label">INTRUSION</div>
+                  <div class="corruption__bar">
+                    <div class="corruption__fill" id="corruptFill"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INDICES -->
+          <aside class="notes">
+            <div class="notes__paper">
+              <h2>Les Indices</h2>
+
+              <div class="clue">
+                <div class="guess">3 6 5 1</div>
+                <div class="result"><b>1</b> correct • <b>2</b> mal placés</div>
+              </div>
+
+              <div class="clue">
+                <div class="guess">1 6 3 7</div>
+                <div class="result"><b>0</b> correct • <b>2</b> mal placés</div>
+              </div>
+
+              <div class="clue">
+                <div class="guess">4 7 1 6</div>
+                <div class="result"><b>2</b> corrects • <b>1</b> mal placé</div>
+              </div>
+
+              <p class="notes__hint">
+                Rapport 12-A : “Les chiffres changent rarement. L’interface, elle, ment souvent.”
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- couche “glitch” -->
+      <div class="glitch" id="glitchLayer" aria-hidden="true"></div>
+
+      <!-- popups -->
+      <div class="popups" id="popups" aria-hidden="true"></div>
+    </main>
+
+    <!-- Winbar comme ta Kaijupedia -->
+    <div class="winbar">
+      <div class="winbar__left">
+        <span class="winbar__icon"></span>
+        <span class="winbar__title">Kaiju Archives — Confinement</span>
+      </div>
+      <div class="winbar__controls">
+        <button class="winbtn winbtn--min" aria-label="Réduire" title="Réduire"><span></span></button>
+        <button class="winbtn winbtn--max" aria-label="Agrandir" title="Agrandir"><span></span></button>
+        <button class="winbtn winbtn--close" aria-label="Fermer" title="Fermer"><span></span></button>
+      </div>
+    </div>
+
+    <script src="./cadenas.js"></script>
+  </body>
+</html>
