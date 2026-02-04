@@ -186,14 +186,14 @@ class LoginScene extends Phaser.Scene {
       console.error("Erreur lecture vidéo:", err);
       // Si ça bloque encore, enlève "muted" dans HTML et clique sur Play manuellement
     });
-
-    video.onended = () => {
+video.onended = () => {
   video.style.display = "none";
   console.log("VIDEO FINIE");
 
-  // ➜ Après la vidéo, on lance la page Wiki
-  this.scene.start("Wiki", { invocation: this.SECRET });
+  // ➜ redirection vers la page Kaijupedia
+  window.location.href = "kaijupedia.html";
 };
+
 
   }
 
