@@ -151,18 +151,19 @@ class LoginScene extends Phaser.Scene {
   }
 
   tryLogin() {
-    if (this.progress !== this.SECRET.length) {
-      this.msgLine.textContent = "Déchiffrement incomplet…";
-      this.cameras.main.shake(140, 0.005);
-      return;
-    }
-
-    this.msgLine.textContent = "";
-    this.cameras.main.flash(180, 255, 255, 255);
-    this.scene.start("Wiki", { invocation: pwd });
-    // 🎬 lance la vidéo dans la fenêtre du jeu
-    this.playIntroVideo();
+  if (this.progress !== this.SECRET.length) {
+    this.msgLine.textContent = "Déchiffrement incomplet…";
+    this.cameras.main.shake(140, 0.005);
+    return;
   }
+
+  this.msgLine.textContent = "";
+  this.cameras.main.flash(180, 255, 255, 255);
+
+  // 🎬 Lance la vidéo
+  this.playIntroVideo();
+}
+
 
   playIntroVideo() {
     const video = document.getElementById("introVideo");
@@ -188,12 +189,13 @@ class LoginScene extends Phaser.Scene {
     });
 
     video.onended = () => {
-      video.style.display = "none";
-      console.log("VIDEO FINIE");
+  video.style.display = "none";
+  console.log("VIDEO FINIE");
 
-      // Ici tu pourras lancer ta scène Kaiju
-      // this.scene.start("Game");
-    };
+  // ➜ Après la vidéo, on lance la page Wiki
+  this.scene.start("Wiki", { invocation: this.SECRET });
+};
+
   }
 
   onResize(gameSize) {
