@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stabilisation du Portail</title>
+  
+  <link rel="stylesheet" href="../gamejam.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+  
+  <style>
+    /* Un petit style pour être sûr que le jeu prenne tout l'écran */
+    body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  </style>
+</head>
+<body>
+
+  <div id="game"></div>
+
+  <script src="../jeu1.js"></script>
+
+  <script>
+    // Configuration spécifique pour lancer CE mini-jeu
+    const config = {
+      type: Phaser.AUTO,
+      parent: "game", // Se greffe sur la div id="game"
+      width: window.innerWidth,
+      height: window.innerHeight,
+      backgroundColor: "#07070c",
+      scale: {
+        mode: Phaser.Scale.RESIZE, // S'adapte si on redimensionne la fenêtre
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      // Ici on dit à Phaser d'utiliser la classe définie dans jeu1.js
+      scene: [ PortalStabilizeScene ] 
+    };
+
+    // Démarrage du moteur
+    const game = new Phaser.Game(config);
+  </script>
+
+</body>
+</html>

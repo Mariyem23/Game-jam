@@ -180,3 +180,84 @@ class PortalStabilizeScene extends Phaser.Scene {
     this.portal.setPosition(width / 2, height / 2);
   }
 }
+class SonarScene extends Phaser.Scene {
+  constructor() {
+    super("Jeu_Sonar");
+  }
+
+  create() {
+    const { width, height } = this.scale;
+    
+    // Fond radar
+    this.add.circle(width/2, height/2, 300, 0x002200, 0.3).setStrokeStyle(2, 0x00ff00, 0.5);
+    this.add.circle(width/2, height/2, 200, 0x002200, 0.0).setStrokeStyle(1, 0x00ff00, 0.3);
+    this.add.circle(width/2, height/2, 100, 0x002200, 0.0).setStrokeStyle(1, 0x00ff00, 0.3);
+    
+    // La ligne de scan
+    this.scanLine = this.add.line(0, 0, width/2, height/2, width/2, height/2 - 300, 0x00ff00, 1).setOrigin(0);
+    this.physics.add.existing(this.scanLine);
+    
+    // Groupe de cibles
+    this.targets = [];
+    this.score = 0;
+    
+    // Texte
+    this.label = this.add.text(width/2, 50, "CIBLEZ LE SIGNAL ROUGE", { fontSize: '24px', color: '#00ff00' }).setOrigin(0.5);
+
+    // Faire tourner la ligne
+    this.scanAngle = 0;
+    
+    // Spawn des blips
+    this.time.addEvent({ delay: 2000, callback: this.spawnBlip, callbackScope: this, loop: true });
+  }
+
+  update() {
+    // Rotation de la ligne (radar)
+    this.scanAngle += 0.05;
+    this.scanLine.setTo(this.scale.width/2, this.scale.height/2, 
+                        this.scale.width/2 + Math.cos(this.scanAngle) * 300, 
+                        this.scale.height/2 + Math.sin(this.scanAngle) * 300);
+                        
+    // Vérifier si la ligne touche un blip (logique simplifiée pour l'exemple)
+    // Dans une vraie jam, on check l'angle du blip vs l'angle de la ligne
+    this.targets.forEach(blip => {
+       // Faire disparaitre le blip doucement
+       blip.alpha -= 0.005;
+       if(blip.alpha <= 0) blip.destroy();
+    });
+  }
+
+  spawnBlip() {
+    const { width, height } = this.scale;
+    // Position random dans le cercle
+    const angle = Phaser.Math.FloatBetween(0, 6.28);
+    const dist = Phaser.Math.Between(50, 280);
+    const x = width/2 + Math.cos(angle) * dist;
+    const y = height/2 + Math.sin(angle) * dist;
+
+    // 1 chance sur 3 que ce soit un ENNEMI (Rouge)
+    const isEnemy = Phaser.Math.Between(0, 100) > 60;
+    const color = isEnemy ? 0xff0000 : 0x00ff00;
+    
+    const blip = this.add.circle(x, y, 10, color, 1);
+    blip.setData('isEnemy', isEnemy);
+    blip.setInteractive();
+    
+    blip.on('pointerdown', () => {
+        if(blip.getData('isEnemy')) {
+            this.cameras.main.flash(100, 0, 255, 0); // Flash vert
+            this.score++;
+            this.label.setText("MENACE ÉLIMINÉE: " + this.score);
+            blip.destroy();
+            if(this.score >= 5) {
+                // VICTOIRE -> Retour au menu ou jeu suivant
+                this.scene.start('Kaijupedia'); 
+            }
+        } else {
+             this.cameras.main.shake(100, 0.01); // Erreur
+        }
+    });
+    
+    this.targets.push(blip);
+  }
+}
