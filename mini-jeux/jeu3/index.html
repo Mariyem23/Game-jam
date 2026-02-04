@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kaiju — Terrain</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0b1020;
+            color: #e8ecff;
+            font-family: system-ui, Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .wrap {
+            width: min(1100px, 100%);
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hud {
+            color: #a7b0dd;
+            font-size: 14px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .pill {
+            border: 1px solid rgba(255, 255, 255, .15);
+            background: rgba(255, 255, 255, .06);
+            padding: 6px 10px;
+            border-radius: 999px;
+        }
+
+        button {
+            cursor: pointer;
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid rgba(255, 255, 255, .15);
+            color: #e8ecff;
+            padding: 8px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, .12);
+        }
+
+        canvas {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: #ffffff;
+            display: block;
+        }
+
+        .hint {
+            margin-top: 10px;
+            color: #a7b0dd;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        b {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="top">
+            <div>
+                <div style="font-weight:900; letter-spacing:.3px;">Kaiju — Étape 1 : Terrain</div>
+                <div style="color:#a7b0dd; font-size:13px;">Cases (cercles) + routes (lignes). Après : mouvement du
+                    joueur.</div>
+            </div>
+            <div class="hud">
+                <span class="pill">Case survolée: <b id="hovered">-</b></span>
+                <span class="pill">Case sélectionnée: <b id="selected">-</b></span>
+                <button id="toggleEdit">Mode édition: OFF</button>
+                <button id="reset">Reset positions</button>
+            </div>
+        </div>
+
+        <canvas id="game" width="1280" height="720"></canvas>
+        <div class="hint">
+            - Survole une case pour la voir en surbrillance.<br />
+            - Clique pour sélectionner une case (servira pour le joueur).<br />
+            - Active <b>Mode édition</b> pour déplacer les cases à la souris et créer ton terrain comme sur ton image.
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const canvas = document.getElementById("game");
+            const ctx = canvas.getContext("2d");
+
+            const uiHovered = document.getElementById("hovered");
+            const uiSelected = document.getElementById("selected");
+            const btnToggleEdit = document.getElementById("toggleEdit");
+            const btnReset = document.getElementById("reset");
+
+            let gameOver = false;
+            let gameOverMsg = "";
+
+            let nextFireIn = 2.0; // première attaque après 2 sec
+
+            let bombTimer = 10.0;     // première bombe après 15s
+            const BOMB_INTERVAL = 3.0; // ensuite toutes les 5s
+            // ====== TERRAIN ======
+            const initialNodes = [
+                { id: 0, x: 220, y: 520 },
+                { id: 1, x: 320, y: 250 },
+                { id: 2, x: 430, y: 390 },
+                { id: 3, x: 520, y: 160 },
+                { id: 4, x: 590, y: 600 },
+                { id: 5, x: 650, y: 330 },
+                { id: 6, x: 760, y: 250 },
+                { id: 7, x: 880, y: 160 },
+                { id: 8, x: 980, y: 280 },
+                { id: 9, x: 910, y: 420 },
+                { id: 10, x: 1120, y: 520 },
+            ];
+
+            const edges = [
+                [0, 1], [0, 2], [0, 4],
+                [1, 2], [1, 3],
+                [2, 3], [2, 5],
+                [5, 6], [5, 9],
+                [6, 7],
+                [7, 8],
+                [8, 9], [8, 10],
+                [9, 10],
+                [4, 10],
+            ];
+
+            let nodes = initialNodes.map(n => ({ ...n }));
+
+            // ====== ADJ (voisins) ======
+            const adj = new Map();
+            for (const n of initialNodes) adj.set(n.id, []);
+            for (const [a, b] of edges) {
+                adj.get(a).push(b);
+                adj.get(b).push(a);
+            }
+
+            // ====== UI / Interaction ======
+            let hoveredId = null;
+            let selectedId = null;
+
+            let editMode = false;
+            let draggingId = null;
+            let dragOffset = { x: 0, y: 0 };
+
+            const NODE_RADIUS = 28;
+            const EDGE_WIDTH = 10;
+
+            function setEditMode(on) {
+                editMode = on;
+                btnToggleEdit.textContent = `Mode édition: ${editMode ? "ON" : "OFF"}`;
+            }
+
+            function resetPositions() {
+                nodes = initialNodes.map(n => ({ ...n }));
+                initPlayer();
+                initKaiju();
+            }
+
+            // ====== Helpers ======
+            function dist2(ax, ay, bx, by) {
+                const dx = ax - bx, dy = ay - by;
+                return dx * dx + dy * dy;
+            }
+
+            function getMousePos(evt) {
+                const r = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / r.width;
+                const scaleY = canvas.height / r.height;
+                return {
+                    x: (evt.clientX - r.left) * scaleX,
+                    y: (evt.clientY - r.top) * scaleY
+                };
+            }
+
+            function hitNode(mx, my) {
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    const n = nodes[i];
+                    if (dist2(mx, my, n.x, n.y) <= NODE_RADIUS * NODE_RADIUS) return n.id;
+                }
+                return null;
+            }
+
+            function getNode(id) { return nodes.find(n => n.id === id); }
+
+            // ====== JOUEUR ======
+            let playerNodeId = 1;
+            let playerPos = { x: 0, y: 0 };
+            let playerTarget = { x: 0, y: 0 };
+            let isMoving = false;
+
+            const PLAYER_SPEED = 520; // px/s
+
+            function initPlayer() {
+                const start = getNode(playerNodeId);
+                playerPos.x = start.x; playerPos.y = start.y;
+                playerTarget.x = start.x; playerTarget.y = start.y;
+                isMoving = false;
+            }
+
+            function canMoveTo(fromId, toId) {
+                return adj.get(fromId)?.includes(toId);
+            }
+
+            function movePlayerTo(nodeId) {
+                if (isMoving) return;
+                if (!canMoveTo(playerNodeId, nodeId)) return;
+
+                const dest = getNode(nodeId);
+                if (!dest) return;
+
+                isMoving = true;
+                playerNodeId = nodeId;
+                playerTarget.x = dest.x;
+                playerTarget.y = dest.y;
+            }
+
+            // ====== KAIJU (spawn sur case 10, chase 7s, respawn timer) ======********************************************************************
+            const KAIJU = {
+                state: "idle",      // "idle" | "warning" | "active"
+                nodeId: 10,
+                pos: { x: 0, y: 0 },
+                target: { x: 0, y: 0 },
+                moving: false,
+
+                // timers
+                spawnIn: 25.0,      // 1ère apparition après 30s
+                nextInterval: 15.0, // ensuite toutes les 15s
+                activeLeft: 0,      // temps restant en chase
+
+                // warning blink
+                wT: 0,
+                wStep: 0,           // 0 ON, 1 OFF, 2 ON
+                wVisible: true,
+            };
+
+            const KAIJU_WARN_ON = 0.5;
+            const KAIJU_WARN_OFF = 0.5;
+            const KAIJU_ACTIVE_DURATION = 7.0;         // chase 7s
+            const KAIJU_SPEED = PLAYER_SPEED * 0.5;   // presque pareil que joueur 
+            let kaijuStepTimer = 0.0;                  // tempo décision de pas
+
+            function initKaijuSpawnSystem() {
+                KAIJU.state = "idle";
+                KAIJU.spawnIn = 25.0;
+                KAIJU.activeLeft = 0;
+                KAIJU.moving = false;
+
+                const start = getNode(10);
+                KAIJU.pos.x = start.x; KAIJU.pos.y = start.y;
+                KAIJU.target.x = start.x; KAIJU.target.y = start.y;
+            }
+
+            // plus court chemin: renvoie le "prochain pas" vers goal
+            function bfsNextStep(startId, goalId) {
+                if (startId === goalId) return startId;
+
+                const q = [startId];
+                const prev = new Map();
+                prev.set(startId, null);
+
+                while (q.length) {
+                    const cur = q.shift();
+                    for (const nb of (adj.get(cur) || [])) {
+                        if (prev.has(nb)) continue;
+                        prev.set(nb, cur);
+
+                        if (nb === goalId) {
+                            // remonter jusqu'au premier pas
+                            let step = nb;
+                            let p = prev.get(step);
+                            while (p !== startId && p !== null) {
+                                step = p;
+                                p = prev.get(step);
+                            }
+                            return step;
+                        }
+                        q.push(nb);
+                    }
+                }
+                return startId;
+            }
+
+            function startKaijuWarning() {
+                // place kaiju sur node 10 (sans être visible "active" encore)
+                KAIJU.nodeId = 10;
+                const n = getNode(10);
+                KAIJU.pos.x = n.x; KAIJU.pos.y = n.y;
+                KAIJU.target.x = n.x; KAIJU.target.y = n.y;
+                KAIJU.moving = false;
+
+                KAIJU.state = "warning";
+                KAIJU.wT = 0;
+                KAIJU.wStep = 0;
+                KAIJU.wVisible = true;
+            }
+
+            function startKaijuActive() {
+                KAIJU.state = "active";
+                KAIJU.activeLeft = KAIJU_ACTIVE_DURATION;
+                kaijuStepTimer = 0.0;
+            }
+
+            function hideKaiju() {
+                KAIJU.state = "idle";
+                KAIJU.moving = false;
+                KAIJU.activeLeft = 0;
+            }
+
+            function updateKaiju(dt) {
+                if (gameOver) return;
+
+                // timer spawn global
+                if (KAIJU.state === "idle") {
+                    KAIJU.spawnIn -= dt;
+                    if (KAIJU.spawnIn <= 0) {
+                        startKaijuWarning();
+                        // prépare le prochain spawn (dans 20s) — on le remettra après fin de chase
+                        KAIJU.spawnIn = KAIJU.nextInterval;
+                    }
+                    return;
+                }
+
+                // warning blink 2 fois
+                if (KAIJU.state === "warning") {
+                    KAIJU.wT += dt;
+
+                    if (KAIJU.wStep === 0) {
+                        KAIJU.wVisible = true;
+                        if (KAIJU.wT >= KAIJU_WARN_ON) { KAIJU.wT = 0; KAIJU.wStep = 1; }
+                    } else if (KAIJU.wStep === 1) {
+                        KAIJU.wVisible = false;
+                        if (KAIJU.wT >= KAIJU_WARN_OFF) { KAIJU.wT = 0; KAIJU.wStep = 2; }
+                    } else {
+                        KAIJU.wVisible = true;
+                        if (KAIJU.wT >= KAIJU_WARN_ON) {
+                            startKaijuActive();
+                        }
+                    }
+                    return;
+                }
+
+                // active chase
+                if (KAIJU.state === "active") {
+                    KAIJU.activeLeft -= dt;
+                    if (KAIJU.activeLeft <= 0) {
+                        hideKaiju();
+                        return;
+                    }
+
+                    // décide un pas toutes les ~0.8s (ajuste)
+                    kaijuStepTimer -= dt;
+                    if (kaijuStepTimer <= 0 && !KAIJU.moving) {
+                        const next = bfsNextStep(KAIJU.nodeId, playerNodeId);
+                        if (next !== KAIJU.nodeId) {
+                            const dest = getNode(next);
+                            KAIJU.nodeId = next;
+                            KAIJU.target.x = dest.x;
+                            KAIJU.target.y = dest.y;
+                            KAIJU.moving = true;
+                        }
+                        kaijuStepTimer = 0.6 + Math.random() * 0.4; // 0.6–1.0s
+                    }
+
+                    // animation déplacement kaiju
+                    if (KAIJU.moving) {
+                        const dx = KAIJU.target.x - KAIJU.pos.x;
+                        const dy = KAIJU.target.y - KAIJU.pos.y;
+                        const dist = Math.hypot(dx, dy);
+                        const step = KAIJU_SPEED * dt;
+
+                        if (dist <= step) {
+                            KAIJU.pos.x = KAIJU.target.x;
+                            KAIJU.pos.y = KAIJU.target.y;
+                            KAIJU.moving = false;
+
+                            // si kaiju arrive sur la case du joueur -> perdu
+                            if (KAIJU.nodeId === playerNodeId) {
+                                killPlayer("Le Kaiju t'a rattrapé !");
+                            }
+                        } else {
+                            KAIJU.pos.x += (dx / dist) * step;
+                            KAIJU.pos.y += (dy / dist) * step;
+                        }
+                    }
+                }
+            }
+
+            function drawKaiju() {
+                // WARNING: juste un gros halo sur la case 10
+                if (KAIJU.state === "warning" && KAIJU.wVisible) {
+                    const n = getNode(10);
+                    ctx.save();
+                    ctx.fillStyle = "rgba(160, 60, 255, 0.18)";
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, NODE_RADIUS + 40, 0, Math.PI * 2);
+                    ctx.fill();
+                    // petit warning au centre
+                    drawWarningAt(n.x, n.y);
+                    ctx.restore();
+                    return;
+                }
+
+                // ACTIVE: boule violette
+                if (KAIJU.state === "active") {
+                    const x = KAIJU.pos.x, y = KAIJU.pos.y;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(160, 60, 255, 0.25)";
+                    ctx.beginPath();
+                    ctx.arc(x, y, 46, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = "#a03cff";
+                    ctx.beginPath();
+                    ctx.arc(x, y, 24, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // ====== ATTAQUE FEU (bordure -> ligne -> projectile) ======*******************************************************************************
+
+            const FIRE = {
+                state: "idle",    // "idle" | "warning" | "firing"
+                axis: "h",        // "h" ou "v"
+                lineX: 0,
+                lineY: 0,
+                t: 0,
+                blinkStep: 0,     // 0 ON, 1 OFF, 2 ON
+                visible: true,
+                projectile: null, // {x,y,vx,vy}
+            };
+
+            const WARN_ON = 0.5;
+            const WARN_OFF = 0.5;
+            const FIRE_SPEED = PLAYER_SPEED * 1.6;  // ~ vitesse joueur
+            const FIRE_RADIUS = 28;           // 🔥 plus gros (augmente si tu veux)
+            const PLAYER_RADIUS = 18;
+            const WARNING_SCALE = 1.4;              // ⚠️ icône plus grande
+            function startFireAttack(axis) {
+
+
+                FIRE.axis = axis;
+
+                // Important: on "verrouille" la ligne au moment du warning (sinon ça bouge trop)
+                FIRE.lineX = playerPos.x;
+                FIRE.lineY = playerPos.y;
+
+                FIRE.state = "warning";
+                FIRE.t = 0;
+                FIRE.blinkStep = 0;
+                FIRE.visible = true;
+                FIRE.projectile = null;
+            }
+
+            function spawnProjectile() {
+                if (FIRE.axis === "h") {
+                    const fromLeft = Math.random() < 0.5;
+                    FIRE.projectile = {
+                        x: fromLeft ? -60 : canvas.width + 60,
+                        y: FIRE.lineY,
+                        vx: fromLeft ? FIRE_SPEED : -FIRE_SPEED,
+                        vy: 0
+                    };
+                } else {
+                    const fromTop = Math.random() < 0.5;
+                    FIRE.projectile = {
+                        x: FIRE.lineX,
+                        y: fromTop ? -60 : canvas.height + 60,
+                        vx: 0,
+                        vy: fromTop ? FIRE_SPEED : -FIRE_SPEED
+                    };
+                }
+            }
+
+            function killPlayer(reason) {
+                gameOver = true;
+                gameOverMsg = "T'as perdu 😵 — " + reason;
+
+                // stop feu
+                FIRE.state = "idle";
+                FIRE.projectile = null;
+
+                // stop mouvement
+                isMoving = false;
+            }
+
+            function updateFire(dt) {
+
+                if (FIRE.state === "idle") return;
+
+                if (FIRE.state === "warning") {
+                    FIRE.t += dt;
+
+                    if (FIRE.blinkStep === 0) {
+                        FIRE.visible = true;
+                        if (FIRE.t >= WARN_ON) { FIRE.t = 0; FIRE.blinkStep = 1; }
+                    } else if (FIRE.blinkStep === 1) {
+                        FIRE.visible = false;
+                        if (FIRE.t >= WARN_OFF) { FIRE.t = 0; FIRE.blinkStep = 2; }
+                    } else {
+                        FIRE.visible = true;
+                        if (FIRE.t >= WARN_ON) {
+                            FIRE.state = "firing";
+                            spawnProjectile();
+                        }
+                    }
+                    return;
+                }
+
+                // firing
+                const p = FIRE.projectile;
+                if (!p) { FIRE.state = "idle"; return; }
+
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                // collision joueur vs boule de feu
+                const d = Math.hypot(playerPos.x - p.x, playerPos.y - p.y);
+                if (d <= (PLAYER_RADIUS + FIRE_RADIUS)) {
+                    killPlayer("Touché par le feu !");
+                }
+
+                // fin quand sort de l'écran
+                if (p.x < -120 || p.x > canvas.width + 120 || p.y < -120 || p.y > canvas.height + 120) {
+                    FIRE.state = "idle";
+                    FIRE.projectile = null;
+                }
+            }
+
+
+            function drawWarningAt(x, y) {
+                ctx.save();
+                ctx.translate(x, y);
+
+                const s = WARNING_SCALE;
+
+                ctx.fillStyle = "#ffd400";
+                ctx.beginPath();
+                ctx.moveTo(0, -22 * s);
+                ctx.lineTo(22 * s, 18 * s);
+                ctx.lineTo(-22 * s, 18 * s);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = "#111";
+                ctx.font = `bold ${Math.round(22 * s)}px system-ui`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("!", 0, 4 * s);
+
+                ctx.restore();
+            }
+
+            function drawBorderWarning() {
+                if (FIRE.state !== "warning" || !FIRE.visible) return;
+
+                ctx.save();
+
+                // ligne rouge légère
+                ctx.strokeStyle = "rgba(255,0,0,0.35)";
+                ctx.lineWidth = 8;
+                ctx.lineCap = "round";
+
+                if (FIRE.axis === "h") {
+                    const y = FIRE.lineY;
+                    ctx.beginPath();
+                    ctx.moveTo(20, y);
+                    ctx.lineTo(canvas.width - 20, y);
+                    ctx.stroke();
+
+                    // warning aux 2 bords (gauche + droite)
+                    drawWarningAt(40, y);
+                    drawWarningAt(canvas.width - 40, y);
+                } else {
+                    const x = FIRE.lineX;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 20);
+                    ctx.lineTo(x, canvas.height - 20);
+                    ctx.stroke();
+
+                    // warning haut + bas
+                    drawWarningAt(x, 40);
+                    drawWarningAt(x, canvas.height - 40);
+                }
+
+                ctx.restore();
+            }
+
+            function drawFireball() {
+                if (FIRE.state !== "firing" || !FIRE.projectile) return;
+
+                const p = FIRE.projectile;
+
+                // halo
+                ctx.fillStyle = "rgba(255, 60, 0, 0.25)";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, FIRE_RADIUS + 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                // boule (plus grosse)
+                ctx.fillStyle = "#ff3c00";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, FIRE_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+
+                // centre clair
+                ctx.fillStyle = "rgba(255,255,255,0.55)";
+                ctx.beginPath();
+                ctx.arc(p.x - 6, p.y - 6, Math.max(4, FIRE_RADIUS * 0.35), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ====== ATTAQUE BOMBE (zone rouge -> explosion) ======***********************************************************************************
+            const BOMB = {
+                state: "idle",     // "idle" | "warning" | "exploding"
+                x: 0,
+                y: 0,
+                r: 260,            // rayon du cercle rouge (augmente/réduit)
+                t: 0,
+                blinkStep: 0,      // 0 ON, 1 OFF, 2 ON
+                visible: true,
+                affected: [],      // ids des cases touchées
+                explosionT: 0,     // timer explosion
+            };
+
+            const BOMB_WARN_ON = 0.5;
+            const BOMB_WARN_OFF = 0.5;
+            const EXPLOSION_DURATION = 0.6; // durée animation explosion
+
+            function pickRandomBombCenter() {
+                // centre sur une case aléatoire (tu peux changer: proche du joueur, etc.)
+                const n = nodes[Math.floor(Math.random() * nodes.length)];
+                return { x: n.x, y: n.y };
+            }
+
+            function computeAffectedNodes(cx, cy, radius) {
+                const out = [];
+                const r2 = radius * radius;
+                for (const n of nodes) {
+                    const dx = n.x - cx;
+                    const dy = n.y - cy;
+                    if (dx * dx + dy * dy <= r2) out.push(n.id);
+                }
+                return out;
+            }
+
+            function startBombAttack() {
+                if (gameOver) return;
+                if (BOMB.state !== "idle") return;       // une bombe à la fois
+
+
+                const c = pickRandomBombCenter();
+                BOMB.x = c.x;
+                BOMB.y = c.y;
+                BOMB.affected = computeAffectedNodes(BOMB.x, BOMB.y, BOMB.r);
+
+                BOMB.state = "warning";
+                BOMB.t = 0;
+                BOMB.blinkStep = 0;
+                BOMB.visible = true;
+                BOMB.explosionT = 0;
+            }
+
+            function updateBomb(dt) {
+                if (BOMB.state === "idle") return;
+
+                if (BOMB.state === "warning") {
+                    BOMB.t += dt;
+
+                    if (BOMB.blinkStep === 0) {
+                        BOMB.visible = true;
+                        if (BOMB.t >= BOMB_WARN_ON) { BOMB.t = 0; BOMB.blinkStep = 1; }
+                    } else if (BOMB.blinkStep === 1) {
+                        BOMB.visible = false;
+                        if (BOMB.t >= BOMB_WARN_OFF) { BOMB.t = 0; BOMB.blinkStep = 2; }
+                    } else {
+                        BOMB.visible = true;
+                        if (BOMB.t >= BOMB_WARN_ON) {
+                            // BOOM
+                            BOMB.state = "exploding";
+                            BOMB.explosionT = 0;
+
+                            // si joueur sur une case touchée -> perdu
+                            if (BOMB.affected.includes(playerNodeId)) {
+                                killPlayer("Touché par la bombe !");
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // explosion anim
+                if (BOMB.state === "exploding") {
+                    BOMB.explosionT += dt;
+                    if (BOMB.explosionT >= EXPLOSION_DURATION) {
+                        BOMB.state = "idle";
+                    }
+                }
+            }
+
+            function drawBombWarning() {
+                if (BOMB.state !== "warning" || !BOMB.visible) return;
+
+                // cercle rouge translucide
+                ctx.save();
+                ctx.fillStyle = "rgba(255, 0, 0, 0.18)";
+                ctx.beginPath();
+                ctx.arc(BOMB.x, BOMB.y, BOMB.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // contour
+                ctx.strokeStyle = "rgba(255, 0, 0, 0.45)";
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(BOMB.x, BOMB.y, BOMB.r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // icône ! au centre (réutilise ton style)
+                drawWarningAt(BOMB.x, BOMB.y);
+
+                ctx.restore();
+            }
+
+            function drawBombExplosion() {
+                if (BOMB.state !== "exploding") return;
+
+                const t = Math.min(1, BOMB.explosionT / EXPLOSION_DURATION);
+
+                // expansion + fade
+                const R = BOMB.r * (0.6 + 0.6 * t);
+
+                ctx.save();
+
+                // flash central
+                ctx.fillStyle = `rgba(255,120,0,${0.25 * (1 - t)})`;
+                ctx.beginPath();
+                ctx.arc(BOMB.x, BOMB.y, R, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ring
+                ctx.strokeStyle = `rgba(255,60,0,${0.55 * (1 - t)})`;
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.arc(BOMB.x, BOMB.y, R, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // marque les cases touchées en rouge pendant l'explosion
+                for (const id of BOMB.affected) {
+                    const n = getNode(id);
+                    if (!n) continue;
+                    ctx.fillStyle = `rgba(255,0,0,${0.22 * (1 - t)})`;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, NODE_RADIUS + 14, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            // ====== Animation update ======
+            let lastTime = performance.now();
+            function update() {
+                const now = performance.now();
+                const dt = Math.min(0.033, (now - lastTime) / 1000);
+                lastTime = now;
+
+                if (gameOver) return;
+                // ===== BOMBE AUTO =====
+                bombTimer -= dt;
+                if (bombTimer <= 0) {
+                    startBombAttack();
+                    bombTimer = BOMB_INTERVAL;
+                }
+
+                // Timer attaque auto
+                nextFireIn -= dt;
+                if (nextFireIn <= 0) {
+                    startRandomFireAttack();
+                    // Prochaine attaque aléatoire entre 1.8s et 3.5s
+                    nextFireIn = 1.8 + Math.random() * 1.7;
+                }
+
+                // player move
+                if (isMoving) {
+                    const dx = playerTarget.x - playerPos.x;
+                    const dy = playerTarget.y - playerPos.y;
+                    const dist = Math.hypot(dx, dy);
+                    const step = PLAYER_SPEED * dt;
+
+                    if (dist <= step) {
+                        playerPos.x = playerTarget.x;
+                        playerPos.y = playerTarget.y;
+                        isMoving = false;
+                    } else {
+                        playerPos.x += (dx / dist) * step;
+                        playerPos.y += (dy / dist) * step;
+                    }
+                }
+
+                // fire attack
+                updateFire(dt);
+                updateBomb(dt);
+                updateKaiju(dt);
+            }
+
+
+
+            // ====== Draw ======
+            function draw() {
+                update();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // edges
+                for (const [aId, bId] of edges) {
+                    const a = getNode(aId);
+                    const b = getNode(bId);
+                    if (!a || !b) continue;
+
+                    ctx.lineCap = "round";
+
+                    ctx.strokeStyle = "#ff0000";
+                    ctx.lineWidth = EDGE_WIDTH + 4;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = "#5b3a3a";
+                    ctx.lineWidth = EDGE_WIDTH;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
+                }
+
+                // nodes
+                for (const n of nodes) {
+                    const isHovered = n.id === hoveredId;
+                    const isSelected = n.id === selectedId;
+
+                    ctx.fillStyle = "#ff0000";
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, NODE_RADIUS + 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = "#6b3f3f";
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (isHovered || isSelected) {
+                        ctx.strokeStyle = isSelected ? "#00d1ff" : "#ffd166";
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, NODE_RADIUS + 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    ctx.fillStyle = "rgba(0,0,0,0.55)";
+                    ctx.font = "bold 16px system-ui";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(String(n.id), n.x, n.y);
+                }
+
+                // Kaiju (simple rond violet)
+                //effacer
+                drawBorderWarning(); // warning AU-DESSUS du terrain
+                drawFireball();      // boule AU-DESSUS
+                drawBombWarning();
+                drawBombExplosion();
+                drawKaiju();
+
+
+                // joueur (dessiné au-dessus)
+                {
+                    const px = playerPos.x;
+                    const py = playerPos.y;
+
+                    ctx.fillStyle = "rgba(0, 170, 255, 0.25)";
+                    ctx.beginPath();
+                    ctx.arc(px, py, 34, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = "#00aaff";
+                    ctx.beginPath();
+                    ctx.arc(px, py, 18, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = "rgba(255,255,255,0.65)";
+                    ctx.beginPath();
+                    ctx.arc(px - 6, py - 6, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // texte édition
+                if (editMode) {
+                    ctx.fillStyle = "rgba(0,0,0,0.6)";
+                    ctx.font = "14px system-ui";
+                    ctx.textAlign = "left";
+                    ctx.fillText("Mode édition ON : drag pour bouger une case", 14, 24);
+                    ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 44);
+                } else {
+                    ctx.fillStyle = "rgba(0,0,0,0.55)";
+                    ctx.font = "14px system-ui";
+                    ctx.textAlign = "left";
+                    ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 24);
+                }
+                //jeu terminer
+                if (gameOver) {
+                    ctx.fillStyle = "rgba(0,0,0,0.45)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 48px system-ui";
+                    ctx.textAlign = "center";
+                    ctx.fillText("T'AS PERDU", canvas.width / 2, canvas.height / 2 - 10);
+
+                    ctx.font = "18px system-ui";
+                    ctx.fillStyle = "rgba(255,255,255,0.9)";
+                    ctx.fillText(gameOverMsg, canvas.width / 2, canvas.height / 2 + 28);
+
+                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 60);
+                }
+
+                requestAnimationFrame(draw);
+            }
+            //feu aleratoire
+            function startRandomFireAttack() {
+                if (FIRE.state !== "idle" || gameOver) return;
+
+                const axis = Math.random() < 0.5 ? "h" : "v";
+                FIRE.axis = axis;
+
+                // Position aléatoire sur l'écran (évite trop proche des bords)
+                const margin = 80;
+                if (axis === "h") {
+                    FIRE.lineY = margin + Math.random() * (canvas.height - margin * 2);
+                    FIRE.lineX = playerPos.x; // pas utilisé pour h, mais ok
+                } else {
+                    FIRE.lineX = margin + Math.random() * (canvas.width - margin * 2);
+                    FIRE.lineY = playerPos.y; // pas utilisé pour v, mais ok
+                }
+
+                FIRE.state = "warning";
+                FIRE.t = 0;
+                FIRE.blinkStep = 0;
+                FIRE.visible = true;
+                FIRE.projectile = null;
+            }
+
+            // ====== Events ======
+            canvas.addEventListener("mousemove", (e) => {
+                const { x, y } = getMousePos(e);
+                hoveredId = hitNode(x, y);
+                uiHovered.textContent = hoveredId ?? "-";
+
+                if (editMode && draggingId !== null) {
+                    const n = getNode(draggingId);
+                    if (n) {
+                        n.x = x - dragOffset.x;
+                        n.y = y - dragOffset.y;
+
+                        // si on déplace la case du joueur (et pas en mouvement)
+                        if (n.id === playerNodeId && !isMoving) {
+                            playerPos.x = n.x; playerPos.y = n.y;
+                            playerTarget.x = n.x; playerTarget.y = n.y;
+                        }
+                    }
+                }
+            });
+
+            canvas.addEventListener("mousedown", (e) => {
+                const { x, y } = getMousePos(e);
+                const id = hitNode(x, y);
+
+                if (editMode) {
+                    if (id !== null) {
+                        draggingId = id;
+                        const n = getNode(id);
+                        dragOffset.x = x - n.x;
+                        dragOffset.y = y - n.y;
+                    }
+                    return;
+                }
+
+                if (id !== null) {
+                    selectedId = id;
+                    uiSelected.textContent = String(selectedId);
+                    movePlayerTo(id);
+                }
+            });
+
+            window.addEventListener("mouseup", () => {
+                draggingId = null;
+            });
+
+            btnToggleEdit.addEventListener("click", () => {
+                setEditMode(!editMode);
+            });
+
+            btnReset.addEventListener("click", () => {
+                resetPositions();
+            });
+
+            // Test clavier: F = horizontal, Shift+F = vertical
+            window.addEventListener("keydown", (e) => {
+                if (e.code === "KeyF") {
+                    startFireAttack(e.shiftKey ? "v" : "h");
+                }
+            });
+            window.addEventListener("keydown", (e) => {
+                if (e.code === "KeyB") {
+                    startBombAttack();
+                }
+            });
+
+            // init
+            setEditMode(false);
+            initPlayer();
+            initKaijuSpawnSystem();
+            draw();
+        })();
+
+        //bombe*****************************
+        // ====== ATTAQUE BOMBE (zone rouge -> explosion) ======
+        const BOMB = {
+            state: "idle",     // "idle" | "warning" | "exploding"
+            x: 0,
+            y: 0,
+            r: 160,            // rayon du cercle rouge (augmente/réduit)
+            t: 0,
+            blinkStep: 0,      // 0 ON, 1 OFF, 2 ON
+            visible: true,
+            affected: [],      // ids des cases touchées
+            explosionT: 0,     // timer explosion
+        };
+
+
+
+    </script>
+
+
+</body>
+
+</html>
