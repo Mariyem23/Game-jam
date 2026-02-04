@@ -157,13 +157,12 @@ class LoginScene extends Phaser.Scene {
     return;
   }
 
-  this.msgLine.textContent = "";
-  this.cameras.main.flash(180, 255, 255, 255);
-
-  // 🎬 Lance la vidéo
-  this.playIntroVideo();
-}
-
+    this.msgLine.textContent = "";
+    this.cameras.main.flash(180, 255, 255, 255);
+    this.scene.start("Wiki", { invocation: pwd });
+    // 🎬 lance la vidéo dans la fenêtre du jeu
+    this.playIntroVideo();
+  }
 
   playIntroVideo() {
     const video = document.getElementById("introVideo");
@@ -214,146 +213,7 @@ class LoginScene extends Phaser.Scene {
     this.ui.setScale(uiScale);
   }
 }
-class WikiScene extends Phaser.Scene {
-  constructor() {
-    super("Wiki");
-    this.invocation = "";
-    this.kaijuHP = 100;
-    this.escape = 0;
-  }
 
-  // Phaser appelle init() quand on démarre la scène avec des data
-  init(data) {
-    this.invocation = data && data.invocation ? data.invocation : "";
-  }
-
-  create() {
-    const width = this.scale.width;
-    const height = this.scale.height;
-
-    // 1) Fond style wiki
-    this.add.rectangle(0, 0, width, height, 0xf5f5f5).setOrigin(0);
-
-    // 2) Barre top "Wikipedia"
-    this.add.rectangle(0, 0, width, 60, 0xe6e6e6).setOrigin(0);
-    this.add.text(20, 18, "Wikipedia", {
-      fontFamily: "Arial",
-      fontSize: "22px",
-      color: "#111111",
-      fontStyle: "bold",
-    });
-
-    // 3) Titre article
-    this.add.text(40, 90, "Kaiju", {
-      fontFamily: "Georgia",
-      fontSize: "52px",
-      color: "#111111",
-    });
-
-    // 4) Afficher l’invocation tapée au login
-    this.invocationText = this.add.text(
-      40,
-      155,
-      `Invocation détectée : "${this.invocation}"`,
-      {
-        fontFamily: "Arial",
-        fontSize: "18px",
-        color: "#7a0000",
-      },
-    );
-
-    // 5) Texte wiki fake
-    const paragraph =
-      "Les kaijus sont des créatures colossales. Certaines légendes parlent d’une invocation numérique via une interface...";
-    this.add.text(40, 200, paragraph, {
-      fontFamily: "Arial",
-      fontSize: "20px",
-      color: "#222222",
-      wordWrap: { width: width - 80 },
-      lineSpacing: 8,
-    });
-
-    // 6) HUD (HP / ESCAPE) en haut à droite
-    this.hpText = this.add.text(width - 220, 16, "", {
-      fontFamily: "Arial",
-      fontSize: "18px",
-      color: "#111111",
-    });
-
-    this.escapeText = this.add.text(width - 220, 38, "", {
-      fontFamily: "Arial",
-      fontSize: "18px",
-      color: "#111111",
-    });
-
-    this.refreshHUD();
-
-    // 7) Lien cliquable (test mini-jeu)
-    const link = this.add
-      .text(40, height - 80, "▶ Lancer un protocole de confinement", {
-        fontFamily: "Arial",
-        fontSize: "22px",
-        color: "#0645ad",
-      })
-      .setInteractive({ useHandCursor: true });
-
-    link.on("pointerdown", () => {
-      // Pour l’instant on simule : tu “joues” => HP baisse mais ESCAPE monte
-      this.kaijuHP = Math.max(0, this.kaijuHP - 10);
-      this.escape = Math.min(100, this.escape + 12);
-      this.refreshHUD();
-
-      // Conditions fin
-      if (this.escape >= 100) this.showGameOver();
-      if (this.kaijuHP <= 0) this.showVictory();
-    });
-  }
-
-  refreshHUD() {
-    this.hpText.setText(`HP: ${this.kaijuHP}`);
-    this.escapeText.setText(`ESCAPE: ${Math.floor(this.escape)}%`);
-  }
-
-  showGameOver() {
-    this.add
-      .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.65)
-      .setOrigin(0);
-    this.add
-      .text(
-        this.scale.width / 2,
-        this.scale.height / 2,
-        "GAME OVER\nLe kaiju sort de l'écran",
-        {
-          fontFamily: "Arial",
-          fontSize: "42px",
-          color: "#ffffff",
-          align: "center",
-        },
-      )
-      .setOrigin(0.5);
-    this.input.enabled = false;
-  }
-
-  showVictory() {
-    this.add
-      .rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0.75)
-      .setOrigin(0);
-    this.add
-      .text(
-        this.scale.width / 2,
-        this.scale.height / 2,
-        "VICTOIRE\nKaiju neutralisé",
-        {
-          fontFamily: "Arial",
-          fontSize: "42px",
-          color: "#111111",
-          align: "center",
-        },
-      )
-      .setOrigin(0.5);
-    this.input.enabled = false;
-  }
-}
 
 const config = {
   type: Phaser.AUTO,
@@ -365,7 +225,7 @@ const config = {
     height: window.innerHeight,
   },
   dom: { createContainer: true },
-  scene: [LoginScene, WikiScene],
+  scene: [LoginScene],
 };
 
 new Phaser.Game(config);
