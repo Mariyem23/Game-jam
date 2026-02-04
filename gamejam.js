@@ -225,7 +225,8 @@ const config = {
     height: window.innerHeight,
   },
   dom: { createContainer: true },
-  scene: [LoginScene],
+  scene: [LoginScene, RituelScene],
+
 };
 
 new Phaser.Game(config);
