@@ -160,6 +160,49 @@ window.addEventListener("DOMContentLoaded", () => {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") tryWord();
   });
+  // ... (Ton code Lift finit ici) ...
+
+  // ============================================================
+  // PARTIE 3 : SYSTÈME DE HP (INTEGRITY)
+  // ============================================================
+  const hpFill = document.getElementById("hpFill");
+  const hpText = document.getElementById("hpText");
+
+  function updateHPDisplay() {
+    // 1. On récupère la valeur stockée (ou 50 par défaut)
+    let currentHP = localStorage.getItem("kaijuHP");
+    
+    if (currentHP === null) {
+      currentHP = 50;
+      localStorage.setItem("kaijuHP", 50);
+    } else {
+      currentHP = parseInt(currentHP);
+    }
+
+    // 2. Sécuriser les limites (0 à 100)
+    currentHP = Math.max(0, Math.min(100, currentHP));
+
+    // 3. Mettre à jour l'affichage
+    if (hpFill && hpText) {
+      hpFill.style.width = currentHP + "%";
+      hpText.textContent = currentHP + "%";
+      
+      // Changer la couleur selon la santé (Rouge si < 30%)
+      if (currentHP < 30) {
+        hpFill.style.background = "#f00"; 
+        hpFill.style.boxShadow = "0 0 15px #f00";
+      } else if (currentHP > 70) {
+        hpFill.style.background = "#4f4"; 
+      } else {
+        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)";
+      }
+    }
+  }
+
+  // Lancer l'affichage au chargement de la page
+  updateHPDisplay();
+
+// --- Fin de la correction, juste avant la fermeture ---
 });
 (() => {
   const phone = document.getElementById("phoneCall");

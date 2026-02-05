@@ -652,8 +652,27 @@ playSequenceFlash(done) {
       this.showWin();
     });
   }
+  // --- GESTION DE LA BARRE DE VIE GLOBALE (LOCALSTORAGE) ---
+  updateGlobalHP(amount) {
+    // 1. On récupère la valeur actuelle (ou 50 par défaut)
+    let currentHP = parseInt(localStorage.getItem("kaijuHP") || "50");
+
+    // 2. On applique le changement (+5 ou -10)
+    currentHP += amount;
+
+    // 3. On empêche de dépasser 0 ou 100
+    currentHP = Math.min(100, Math.max(0, currentHP));
+
+    // 4. On sauvegarde pour la page d'accueil
+    localStorage.setItem("kaijuHP", currentHP);
+    
+    console.log(`Système mis à jour : ${amount > 0 ? '+' : ''}${amount}% (Total: ${currentHP}%)`);
+  }
 
   showWin() {
+    // VICTOIRE : On gagne 5% d'intégrité
+    this.updateGlobalHP(5);
+
     const { width, height } = this.scale;
     this.phaseLayer.removeAll(true);
 
@@ -668,10 +687,11 @@ playSequenceFlash(done) {
       color: "rgba(255,220,220,0.95)",
     }).setOrigin(0.5);
 
-    const t2 = this.add.text(width / 2, height / 2 - 10, "TRACE DIMENSIONNELLE : NULLE\nARCHIVAGE AUTOMATIQUE… OK", {
+    // J'ai ajouté la mention du bonus ici
+    const t2 = this.add.text(width / 2, height / 2 - 10, "TRACE DIMENSIONNELLE : NULLE\nSTABILITÉ SYSTÈME : +5%", {
       fontFamily: "Arial",
       fontSize: "12px",
-      color: "rgba(255,255,255,0.65)",
+      color: "#4ff", // Couleur cyan pour le positif
       align: "center",
     }).setOrigin(0.5);
 
@@ -684,36 +704,43 @@ playSequenceFlash(done) {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     btn.on("pointerdown", () => {
-      // tu peux changer la destination si tu veux
-      window.location.href = "kaijupedia.html";
+      // Retour vers la page principale (adapte le lien si besoin selon tes dossiers)
+      window.location.href = "../../kaijupedia.html"; 
     });
 
     this.phaseLayer.add([panel, t1, t2, btn]);
   }
 
   gameOver() {
+    // 1. DÉFAITE : On perd 10% d'intégrité (sauvegardé dans le localStorage)
+    this.updateGlobalHP(-10);
+
     const { width, height } = this.scale;
     this.phaseLayer.removeAll(true);
 
     this.setMessage("");
 
+    // Fond du panneau (rouge sombre)
     const panel = this.add.rectangle(width / 2, height / 2, Math.min(560, width - 40), 220, 0x000000, 0.66)
       .setStrokeStyle(2, 0xff4b4b, 0.20);
 
+    // Titre du message
     const t1 = this.add.text(width / 2, height / 2 - 40, "RUPTURE DU PORTAIL", {
       fontFamily: "Arial",
       fontSize: "20px",
       color: "rgba(255,90,90,0.95)",
     }).setOrigin(0.5);
 
-    const t2 = this.add.text(width / 2, height / 2 - 10, "La procédure a échoué.\nReprise conseillée.", {
+    // Sous-titre avec le malus
+    const t2 = this.add.text(width / 2, height / 2 - 10, "La procédure a échoué.\nSTABILITÉ SYSTÈME : -10%", {
       fontFamily: "Arial",
       fontSize: "12px",
-      color: "rgba(255,255,255,0.65)",
+      color: "#f55", // Rouge
       align: "center",
     }).setOrigin(0.5);
 
-    const btn = this.add.text(width / 2, height / 2 + 60, "RECOMMENCER", {
+    // BOUTON DE REDIRECTION
+    const btn = this.add.text(width / 2, height / 2 + 60, "RETOUR AUX ARCHIVES", {
       fontFamily: "Arial",
       fontSize: "14px",
       color: "rgba(0,0,0,0.85)",
@@ -721,8 +748,11 @@ playSequenceFlash(done) {
       padding: { left: 16, right: 16, top: 10, bottom: 10 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
+    // C'est ici que ça se passe : au clic, on change de page
     btn.on("pointerdown", () => {
-      this.scene.restart();
+      // On remonte de 2 dossiers pour revenir à kaijupedia.html
+      // (mini-jeux > jeu1 > ... retour racine)
+      window.location.href = "../../kaijupedia.html";
     });
 
     this.phaseLayer.add([panel, t1, t2, btn]);
