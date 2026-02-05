@@ -166,36 +166,37 @@
                 padding: 9px 12px;
             }
         }
-        .energyStack{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  min-width:120px;
-}
 
-.energyNums{
-  display:flex;
-  align-items:baseline;
-  gap:6px;
-}
+        .energyStack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 120px;
+        }
 
-.energyBar{
-  width:140px;
-  height:8px;
-  border-radius:999px;
-  background:rgba(255,255,255,0.10);
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,0.10);
-}
+        .energyNums {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
 
-.energyFill{
-  height:100%;
-  width:0%;
-  border-radius:999px;
-  background:rgba(49,208,122,0.95);
-  box-shadow: 0 0 14px rgba(49,208,122,0.55);
-  transition: width 180ms ease;
-}
+        .energyBar {
+            width: 140px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.10);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+        }
+
+        .energyFill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: rgba(49, 208, 122, 0.95);
+            box-shadow: 0 0 14px rgba(49, 208, 122, 0.55);
+            transition: width 180ms ease;
+        }
     </style>
 </head>
 
@@ -278,6 +279,16 @@
             let gameOverMsg = "";
 
             const energyUI = document.getElementById("energy");
+            // ===== VICTORY FX =====
+            const WINFX = {
+                on: false,
+                x: 0,
+                y: 0,
+                t: 0,
+                dur: 1.4,
+            };
+
+            let winTextDelay = 0; // délai avant "TU AS GAGNÉ"
             function updateEnergyUI() {
                 energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
                 const p = Math.max(0, Math.min(1, ENERGY.collected / ENERGY.goal));
@@ -418,20 +429,32 @@
             }
 
             function collectEnergyIfOnNode() {
-                if (ENERGY.nodeId === null || gameWon) return;
+                if (ENERGY.nodeId === null || gameWon || gameOver) return;
 
                 if (playerNodeId === ENERGY.nodeId) {
                     ENERGY.collected++;
+
                     const n = getNode(ENERGY.nodeId);
-if (n) spawnEnergyPop(n.x, n.y);
-updateEnergyUI();
-                    energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
+                    if (n) spawnEnergyPop(n.x, n.y);
+
+                    updateEnergyUI();
 
                     if (ENERGY.collected >= ENERGY.goal) {
                         gameWon = true;
-                        //endMsg = `Bravo 🎉 Tu as collecté ${ENERGY.collected} modules d'énergie !`;
+
+                        // FX victoire au centre du joueur
+                        WINFX.on = true;
+                        WINFX.t = 0;
+                        WINFX.x = playerPos.x;
+                        WINFX.y = playerPos.y;
+
+                        winTextDelay = 0.65;
+                        screenShake = 10;
+
+                        endMsg = `Bravo 🎉 Tu as collecté ${ENERGY.collected} modules d'énergie !`;
                     } else {
-                        spawnEnergyModule(); // 🔁 change vraiment de case
+                        // ✅ IMPORTANT : déplacer le module ailleurs
+                        spawnEnergyModule();
                     }
                 }
             }
@@ -564,7 +587,7 @@ updateEnergyUI();
             }
 
             function updateKaiju(dt) {
-                if (gameOver) return;
+                if (gameOver || gameWon) return;
 
                 // timer spawn global
                 if (KAIJU.state === "idle") {
@@ -1083,7 +1106,7 @@ updateEnergyUI();
             }
 
             function startBombAttack() {
-                if (gameOver) return;
+                if (gameOver || gameWon) return;
                 if (BOMB.state !== "idle") return;       // une bombe à la fois
 
 
@@ -1202,22 +1225,7 @@ updateEnergyUI();
                 const dt = Math.min(0.033, (now - lastTime) / 1000);
                 lastTime = now;
 
-                // Si gameOver/gameWon, on stop le gameplay, MAIS on laisse les FX tourner
-                if (gameOver || gameWon) {
-                    // update explosion mort
-                    if (DEATHFX.on) {
-                        DEATHFX.t += dt;
-                        if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
-                    }
 
-                    // délai texte "t'as perdu"
-                    if (loseTextDelay > 0) loseTextDelay -= dt;
-
-                    // amortit le tremblement
-                    screenShake *= Math.pow(0.001, dt);
-
-                    return;
-                }
                 // ===== BOMBE AUTO =====
                 bombTimer -= dt;
                 if (bombTimer <= 0) {
@@ -1269,6 +1277,39 @@ updateEnergyUI();
 
                 // amortit le tremblement
                 screenShake *= Math.pow(0.001, dt); // decay smooth
+
+
+                // ✅ Les délais doivent diminuer
+                if (winTextDelay > 0) winTextDelay -= dt;
+                if (loseTextDelay > 0) loseTextDelay -= dt;
+
+                // ✅ timer victoire (sinon drawVictoryFX reste figé)
+                if (WINFX.on) {
+                    WINFX.t += dt;
+                    if (WINFX.t >= WINFX.dur) WINFX.on = false;
+                }
+
+                // ✅ STOP gameplay si fin de jeu (mais laisse les FX)
+                if (gameOver || gameWon) {
+                    // timers / FX continuent
+                    if (winTextDelay > 0) winTextDelay -= dt;
+                    if (loseTextDelay > 0) loseTextDelay -= dt;
+
+                    if (WINFX.on) {
+                        WINFX.t += dt;
+                        if (WINFX.t >= WINFX.dur) WINFX.on = false;
+                    }
+
+                    if (DEATHFX.on) {
+                        DEATHFX.t += dt;
+                        if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
+                    }
+
+                    screenShake *= Math.pow(0.001, dt);
+                    updateEnergyFX(dt);
+
+                    return; // ⛔ empêche bomb/fire/kaiju/joueur de continuer
+                }
             }
 
 
@@ -1488,6 +1529,76 @@ updateEnergyUI();
                 ctx.fillRect(-99999, -99999, 200000, 200000);
                 ctx.restore();
             }
+            function drawVictoryFX() {
+                if (!WINFX.on) return;
+
+                const t = Math.min(1, WINFX.t / WINFX.dur);
+                const x = WINFX.x, y = WINFX.y;
+
+                const easeOut = 1 - Math.pow(1 - t, 3);
+                const pulse = Math.sin(performance.now() * 0.02) * 0.5 + 0.5;
+
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                // FLASH énorme vert
+                {
+                    const R = 80 + easeOut * 560;
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+                    g.addColorStop(0.0, `rgba(255,255,255,${0.85 * (1 - t)})`);
+                    g.addColorStop(0.25, `rgba(120,255,180,${0.55 * (1 - t)})`);
+                    g.addColorStop(1.0, `rgba(0,255,160,0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Onde de choc (anneau géant)
+                {
+                    const R = 120 + easeOut * 720;
+                    ctx.strokeStyle = `rgba(120,255,200,${0.55 * (1 - t)})`;
+                    ctx.lineWidth = 22 * (1 - t) + 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Particules étoiles
+                {
+                    const count = 40;
+                    for (let i = 0; i < count; i++) {
+                        const a = (i / count) * Math.PI * 2;
+                        const sp = 160 + i * 8;
+                        const px = x + Math.cos(a) * easeOut * sp;
+                        const py = y + Math.sin(a) * easeOut * sp;
+
+                        ctx.fillStyle = `rgba(200,255,230,${0.75 * (1 - t)})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 7 * (1 - t) + 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Pulse intérieur “énergie”
+                {
+                    const R = 34 + pulse * 8;
+                    ctx.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.25})`;
+                    ctx.lineWidth = 10 + pulse * 10;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.restore();
+
+                // léger voile clair (glow victory)
+                ctx.save();
+                ctx.fillStyle = `rgba(0,255,160,${0.10 * (1 - t)})`;
+                ctx.fillRect(-99999, -99999, 200000, 200000);
+                ctx.restore();
+            }
             // ====== Draw ======
             function draw() {
                 resizeCanvasToDisplaySize();
@@ -1594,6 +1705,7 @@ updateEnergyUI();
                 drawEnergyFX();
                 drawPlayerFancy(playerPos.x, playerPos.y);
                 drawDeathExplosion();
+                drawVictoryFX();
 
                 // texte édition
                 if (editMode) {
@@ -1611,7 +1723,8 @@ updateEnergyUI();
 
                 ctx.restore();
                 //jeu terminer
-                if ((gameOver || gameWon) && loseTextDelay <= 0) {
+                // ===== MESSAGE FIN (après délais) =====
+                if (gameOver && loseTextDelay <= 0) {
                     ctx.fillStyle = "rgba(0,0,0,0.45)";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1619,27 +1732,36 @@ updateEnergyUI();
                     ctx.font = "bold 52px system-ui";
                     ctx.textAlign = "center";
 
-                    ctx.fillText(
-                        gameWon ? "TU AS GAGNÉ !" : "T'AS PERDU",
-                        canvas.width / 2,
-                        canvas.height / 2 - 15
-                    );
+                    ctx.fillText("T'AS PERDU", canvas.width / 2, canvas.height / 2 - 15);
 
                     ctx.font = "18px system-ui";
                     ctx.fillStyle = "rgba(255,255,255,0.9)";
-                    ctx.fillText(endMsg, canvas.width / 2, canvas.height / 2 + 22);
+                    ctx.fillText(gameOverMsg, canvas.width / 2, canvas.height / 2 + 22);
 
-                    ctx.fillText(
-                        "Appuie sur R pour recommencer",
-                        canvas.width / 2,
-                        canvas.height / 2 + 55
-                    );
+                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 55);
+                }
+
+                if (gameWon && winTextDelay <= 0) {
+                    ctx.fillStyle = "rgba(0,0,0,0.35)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 56px system-ui";
+                    ctx.textAlign = "center";
+
+                    ctx.fillText("TU AS GAGNÉ !", canvas.width / 2, canvas.height / 2 - 10);
+
+                    ctx.font = "18px system-ui";
+                    ctx.fillStyle = "rgba(255,255,255,0.9)";
+                    ctx.fillText(endMsg, canvas.width / 2, canvas.height / 2 + 28);
+
+                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 60);
                 }
                 requestAnimationFrame(draw);
             }
             //feu aleratoire
             function startRandomFireAttack() {
-                if (FIRE.state !== "idle" || gameOver) return;
+                if (FIRE.state !== "idle" || gameOver || gameWon) return;
 
                 const axis = Math.random() < 0.5 ? "h" : "v";
                 FIRE.axis = axis;
