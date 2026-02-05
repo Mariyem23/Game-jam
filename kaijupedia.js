@@ -1,6 +1,51 @@
 window.addEventListener("DOMContentLoaded", () => {
   // ============================================================
-  // PARTIE 1 : BOUTON QUI FUIT (Archive)
+  // PARTIE 1 : SYSTÈME DE HP / STABILITÉ (PRIORITAIRE)
+  // (Doit marcher sur TOUTES les pages)
+  // ============================================================
+  const hpFill = document.getElementById("hpFill");
+  const hpText = document.getElementById("hpText");
+
+  function updateHPDisplay() {
+    // 1. On récupère la valeur stockée (ou 50 par défaut)
+    let currentHP = localStorage.getItem("kaijuHP");
+    
+    if (currentHP === null) {
+      currentHP = 50;
+      localStorage.setItem("kaijuHP", 50);
+    } else {
+      currentHP = parseInt(currentHP);
+    }
+
+    // 2. Sécuriser les limites (0 à 100)
+    currentHP = Math.max(0, Math.min(100, currentHP));
+
+    // 3. Mettre à jour l'affichage
+    if (hpFill && hpText) {
+      hpFill.style.width = currentHP + "%";
+      hpText.textContent = currentHP + "%";
+      
+      // Changer la couleur selon la santé
+      if (currentHP < 30) {
+        hpFill.style.background = "#f00"; // Rouge critique
+        hpFill.style.boxShadow = "0 0 15px #f00";
+      } else if (currentHP > 70) {
+        hpFill.style.background = "#4f4"; // Vert sain
+      } else {
+        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)"; // Normal
+      }
+    }
+  }
+
+  // Lancer l'affichage immédiatement
+  updateHPDisplay();
+
+  // Écouter les changements (si tu joues dans un autre onglet)
+  window.addEventListener("storage", updateHPDisplay);
+
+
+  // ============================================================
+  // PARTIE 2 : BOUTON QUI FUIT (Pour la page d'accueil)
   // ============================================================
   const btn = document.getElementById("archivesBtn");
   const hero = document.querySelector(".hero");
@@ -38,8 +83,9 @@ window.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("mouseleave", () => clearTimeout(timer));
   }
 
+
   // ============================================================
-  // PARTIE 2 : LE SYSTÈME "LIFT" (Soulever l'image)
+  // PARTIE 3 : LE SYSTÈME "LIFT" (Pour kaijupedia 1 et 2)
   // ============================================================
   const lift = document.getElementById("kaijuLift");
   const cover = document.getElementById("kaijuCover");
@@ -47,214 +93,102 @@ window.addEventListener("DOMContentLoaded", () => {
   const go = document.getElementById("kaijuGo");
   const msg = document.getElementById("kaijuMsg");
 
-  // Si les éléments n'existent pas sur la page, on arrête ici pour éviter les erreurs
-  if (!lift || !cover || !input || !go || !msg) return;
+  // On vérifie si le module existe. S'il n'existe pas, ON N'ARRÊTE PAS LE SCRIPT (pour que HP marche)
+  if (lift && cover && input && go && msg) {
+    
+    let dragging = false;
+    let startY = 0;
+    let current = 0;
+    let unlocked = false;
 
-  let dragging = false;
-  let startY = 0;
-  let current = 0;
-  let unlocked = false;
-
-  // Calculer combien on peut soulever (environ 70% de la hauteur)
-  function maxLiftPx() {
-    return Math.floor(lift.offsetHeight * 0.75);
-  }
-
-  function setCover(y) {
-    current = y;
-    cover.style.transform = `translateY(${y}px)`;
-  }
-
-  function unlock() {
-    unlocked = true;
-    lift.classList.add("is-unlocked");
-    setCover(-maxLiftPx()); // On bloque l'image en haut
-    cover.style.cursor = "default";
-    input.focus(); // On met le curseur dans la case texte
-    msg.textContent = "";
-  }
-
-  function onDown(clientY) {
-    if (unlocked) return;
-    dragging = true;
-    // On calcule la position de la souris par rapport à l'image
-    startY = clientY - current;
-    cover.style.transition = "none"; // On enlève l'animation pour que ça suive la souris instantanément
-  }
-
-  function onMove(clientY) {
-    if (!dragging || unlocked) return;
-
-    const maxLift = maxLiftPx();
-    let y = clientY - startY;
-
-    // On limite le mouvement : pas plus bas que 0, pas plus haut que maxLift
-    y = Math.min(0, Math.max(-maxLift, y));
-    setCover(y);
-
-    // Si on a soulevé à plus de 60%, ça se débloque tout seul
-    const progress = Math.abs(y) / maxLift;
-    if (progress >= 0.60) unlock();
-  }
-
-  function onUp() {
-    if (!dragging) return;
-    dragging = false;
-    cover.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"; // Effet rebond
-
-    if (!unlocked) {
-      setCover(0); // Si on lâche trop tôt, ça redescend
-    }
-  }
-
-  // --- Événements Souris & Tactile ---
-  cover.addEventListener("pointerdown", (e) => {
-    e.preventDefault(); // Empêche de sélectionner l'image
-    cover.setPointerCapture(e.pointerId);
-    onDown(e.clientY);
-  });
-
-  cover.addEventListener("pointermove", (e) => {
-    if (dragging) e.preventDefault();
-    onMove(e.clientY);
-  });
-
-  cover.addEventListener("pointerup", onUp);
-  cover.addEventListener("pointercancel", onUp);
-
-  // --- Vérification du Mot de Passe ---
-  // --- Vérification du Mot de Passe ---
-  function tryWord() {
-    // On nettoie l'entrée et on met tout en majuscules pour comparer (plus facile)
-    const v = input.value.trim().toUpperCase();
-
-    // LE NOUVEAU CODE : K-739
-    if (v === "K-739") {
-      msg.style.color = "#4ff";
-      msg.textContent = "ACCÈS AUTORISÉ";
-      
-      // Redirection vers la page rituel
-      // D'après ton image, le chemin est : mini-jeux -> jeu1 -> rituel.html
-      setTimeout(() => {
-        window.location.href = "./mini-jeux/jeu1/rituel.html";
-      }, 800);
-      return;
+    function maxLiftPx() {
+      return Math.floor(lift.offsetHeight * 0.75);
     }
 
-    // Mot de passe faux
-    msg.style.color = "#f55";
-    msg.textContent = "REFUSÉ";
-    
-    // Petite animation de secousse
-    lift.animate([
-      { transform: "translateX(0)" },
-      { transform: "translateX(-5px)" },
-      { transform: "translateX(5px)" },
-      { transform: "translateX(0)" }
-    ], { duration: 300 });
-    
-    input.value = "";
-  }
-
-  go.addEventListener("click", tryWord);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") tryWord();
-  });
-  // ... (Ton code Lift finit ici) ...
-
-  // ============================================================
-  // PARTIE 3 : SYSTÈME DE HP (INTEGRITY)
-  // ============================================================
-  const hpFill = document.getElementById("hpFill");
-  const hpText = document.getElementById("hpText");
-
-  function updateHPDisplay() {
-    // 1. On récupère la valeur stockée (ou 50 par défaut)
-    let currentHP = localStorage.getItem("kaijuHP");
-    
-    if (currentHP === null) {
-      currentHP = 50;
-      localStorage.setItem("kaijuHP", 50);
-    } else {
-      currentHP = parseInt(currentHP);
+    function setCover(y) {
+      current = y;
+      cover.style.transform = `translateY(${y}px)`;
     }
 
-    // 2. Sécuriser les limites (0 à 100)
-    currentHP = Math.max(0, Math.min(100, currentHP));
+    function unlock() {
+      unlocked = true;
+      lift.classList.add("is-unlocked");
+      setCover(-maxLiftPx());
+      cover.style.cursor = "default";
+      input.focus();
+      msg.textContent = "";
+    }
 
-    // 3. Mettre à jour l'affichage
-    if (hpFill && hpText) {
-      hpFill.style.width = currentHP + "%";
-      hpText.textContent = currentHP + "%";
-      
-      // Changer la couleur selon la santé (Rouge si < 30%)
-      if (currentHP < 30) {
-        hpFill.style.background = "#f00"; 
-        hpFill.style.boxShadow = "0 0 15px #f00";
-      } else if (currentHP > 70) {
-        hpFill.style.background = "#4f4"; 
-      } else {
-        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)";
+    function onDown(clientY) {
+      if (unlocked) return;
+      dragging = true;
+      startY = clientY - current;
+      cover.style.transition = "none";
+    }
+
+    function onMove(clientY) {
+      if (!dragging || unlocked) return;
+      const maxLift = maxLiftPx();
+      let y = clientY - startY;
+      y = Math.min(0, Math.max(-maxLift, y));
+      setCover(y);
+      if (Math.abs(y) / maxLift >= 0.60) unlock();
+    }
+
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      cover.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+      if (!unlocked) setCover(0);
+    }
+
+    cover.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      cover.setPointerCapture(e.pointerId);
+      onDown(e.clientY);
+    });
+
+    cover.addEventListener("pointermove", (e) => {
+      if (dragging) e.preventDefault();
+      onMove(e.clientY);
+    });
+
+    cover.addEventListener("pointerup", onUp);
+    cover.addEventListener("pointercancel", onUp);
+
+    // LOGIQUE DU MOT DE PASSE (MODIFIÉE POUR ACCEPTER K-739)
+    function tryWord() {
+      const v = input.value.trim().toUpperCase();
+
+      // CODE POUR KAIJUPEDIA 1 -> K-739
+      if (v === "K-739") {
+        msg.style.color = "#4ff";
+        msg.textContent = "ACCÈS AUTORISÉ";
+        setTimeout(() => {
+          // Vers le jeu RITUEL
+          window.location.href = "./mini-jeux/jeu1/rituel.html";
+        }, 800);
+        return;
       }
+
+      msg.style.color = "#f55";
+      msg.textContent = "REFUSÉ";
+      
+      lift.animate([
+        { transform: "translateX(0)" },
+        { transform: "translateX(-5px)" },
+        { transform: "translateX(5px)" },
+        { transform: "translateX(0)" }
+      ], { duration: 300 });
+      input.value = "";
     }
-  }
 
-  // Lancer l'affichage au chargement de la page
-  updateHPDisplay();
-
-// --- Fin de la correction, juste avant la fermeture ---
-});
-(() => {
-  const phone = document.getElementById("phoneCall");
-  const target = document.getElementById("targetimg");
-
-  if (!phone || !target) return;
-
-  let running = false;
-
-  function getCenterRect(el) {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  }
-
-  function createShield() {
-    const shield = document.createElement("div");
-    shield.className = "possession-shield";
-    document.body.appendChild(shield);
-    return shield;
-  }
-
-  function createFakeCursor(startX, startY) {
-    const c = document.createElement("div");
-    c.className = "possessed-cursor";
-    c.style.left = `${startX}px`;
-    c.style.top = `${startY}px`;
-    document.body.appendChild(c);
-    return c;
-  }
-
-  function animateCursor(cursorEl, from, to, duration = 900) {
-    const start = performance.now();
-
-    return new Promise((resolve) => {
-      function tick(t) {
-        const p = Math.min(1, (t - start) / duration);
-
-        // easing smooth (easeInOut)
-        const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-
-        const x = from.x + (to.x - from.x) * ease;
-        const y = from.y + (to.y - from.y) * ease;
-
-        cursorEl.style.left = `${x}px`;
-        cursorEl.style.top = `${y}px`;
-
-        if (p < 1) requestAnimationFrame(tick);
-        else resolve();
-      }
-      requestAnimationFrame(tick);
+    go.addEventListener("click", tryWord);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") tryWord();
     });
   }
+<<<<<<< HEAD
 
   async function possessAndGuide() {
     if (running) return;
@@ -367,3 +301,6 @@ window.addEventListener("DOMContentLoaded", () => {
     closeEdit();
   });
 })();
+=======
+});
+>>>>>>> 1bb4e41c29e0b37afc2eedab88302e6147a28d3d

@@ -261,7 +261,7 @@ function endAndRedirect(reason){
   el.glitch.style.opacity = "0.35";
 
   setTimeout(() => {
-    window.location.href = "kaijupedia.html";
+    window.location.href = "http://127.0.0.1:5500/kaijupedia2.html";
   }, 700);
 }
 
