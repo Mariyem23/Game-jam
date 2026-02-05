@@ -28,7 +28,7 @@ class LoginScene extends Phaser.Scene {
     this.avatar = this.add.circle(0, -120, 48, 0xffffff, 0.2);
 
     // Nom
-    this.nameText = this.add.text(0, -50, "Le Crabe", { fontFamily: "Arial", fontSize: "46px", color: "#ffffff" }).setOrigin(0.5);
+    this.nameText = this.add.text(0, -50, "Bonjour toi", { fontFamily: "Arial", fontSize: "46px", color: "#ffffff" }).setOrigin(0.5);
 
     // Formulaire HTML
     const html = `
