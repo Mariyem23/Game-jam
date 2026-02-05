@@ -3,27 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>KAIJU — Cadenas de Confinement</title>
+    <title>KAIJU — Cadenas de Confinement (Simple)</title>
 
-    <!-- mêmes polices que Kaijupedia -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="./cadenas.css" />
   </head>
 <audio id="bg-music" src="../../assets/fond.mp3" autoplay loop></audio>
-
+<script src="../../bgm-persist.js"></script>
   <body>
-     <div class="chromeTop">
+    <!-- TOP CHROME -->
+    <div class="chromeTop">
       <div class="chromeTop__tabs">
         <div class="tab tab--active">
           <span class="tab__dot"></span>
           <span class="tab__title">kaijupedia.html</span>
           <span class="tab__close">✕</span>
         </div>
-
         <div class="tab tab--ghost">＋</div>
       </div>
 
@@ -34,7 +39,7 @@
       </div>
     </div>
 
-    <!-- ================= BARRE D’ADRESSE ================= -->
+    <!-- BARRE D’ADRESSE -->
     <div class="browserbar">
       <div class="browserbar__row">
         <div class="navbtns">
@@ -45,7 +50,7 @@
 
         <div class="address">
           <span class="lock">🔒</span>
-          <span class="url">kaiju-archives.local/kaijupedia</span>
+          <span class="url">kaiju-archives.local/lock-simple</span>
         </div>
 
         <div class="tools">
@@ -53,14 +58,18 @@
         </div>
       </div>
     </div>
+
     <main class="screen">
       <section class="panel">
         <div class="panel__head">
           <div class="badge">Cadenas de Confinement</div>
-          <div class="kicker">NIVEAU — MOYEN</div>
-          <h1>Trouvez la bonne combinaison</h1>
+          <div class="kicker">NIVEAU — SIMPLE</div>
+          <h1>Déduis le code</h1>
           <p class="muted">
-            Chaque erreur renforce l’intrusion. Si le système se dérègle… c’est normal.
+            3 chiffres • aucun doublon • bien placé / mal placé.
+          </p>
+          <p class="muted" style="margin-top:6px">
+            Retour auto dans <span id="countdown">06:00</span>
           </p>
         </div>
 
@@ -77,53 +86,55 @@
                 </button>
 
                 <div class="status" id="statusLine"></div>
-
-                <div class="corruption">
-                  <div class="corruption__label">INTRUSION</div>
-                  <div class="corruption__bar">
-                    <div class="corruption__fill" id="corruptFill"></div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
-          <!-- INDICES -->
-          <aside class="notes">
-            <div class="notes__paper">
-              <h2>Les Indices</h2>
+<aside class="notes">
+  <div class="notes__paper">
+    <h2>Rapports d’analyse</h2>
 
-              <div class="clue">
-                <div class="guess">3 6 5 1</div>
-                <div class="result"><b>1</b> correct • <b>2</b> mal placés</div>
-              </div>
+    <div class="clue">
+      <div class="guess">4 1 9 </div>
+      <div class="result">
+        « Une valeur est stable. Les autres sont du bruit. »
+        <br />
+        <span class="muted">(1 bien placé • 0 mal placé)</span>
+      </div>
+    </div>
 
-              <div class="clue">
-                <div class="guess">1 6 3 7</div>
-                <div class="result"><b>0</b> correct • <b>2</b> mal placés</div>
-              </div>
+   <div class="clue">
+      <div class="guess">5 4 7</div>
+      <div class="result">
+        « Le signal est partiellement aligné. »
+        <br />
+        <span class="muted">(1 bien placé • 1 mal placé)</span>
+      </div>
+    </div>
 
-              <div class="clue">
-                <div class="guess">4 7 1 6</div>
-                <div class="result"><b>2</b> corrects • <b>1</b> mal placé</div>
-              </div>
+    <div class="clue">
+      <div class="guess">2 8 7</div>
+      <div class="result">
+        « L’intrusion force un déplacement. »
+        <br />
+        <span class="muted">(1 bien placé • 1 mal placé)</span>
+      </div>
+    </div>
 
-              <p class="notes__hint">
-                Rapport 12-A : “Les chiffres changent rarement. L’interface, elle, ment souvent.”
-              </p>
-            </div>
-          </aside>
+    <p class="notes__hint">
+      “Les chiffres ne mentent pas. L’ordre, si.”
+    </p>
+  </div>
+</aside>
+
         </div>
       </section>
 
-      <!-- couche “glitch” -->
+      <!-- couche “glitch” (tu peux garder, même si on simplifie le gameplay) -->
       <div class="glitch" id="glitchLayer" aria-hidden="true"></div>
-
-      <!-- popups -->
-      <div class="popups" id="popups" aria-hidden="true"></div>
     </main>
 
-    <!-- Winbar comme ta Kaijupedia -->
+    <!-- Winbar -->
     <div class="winbar">
       <div class="winbar__left">
         <span class="winbar__icon"></span>

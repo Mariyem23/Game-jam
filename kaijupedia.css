@@ -656,3 +656,207 @@ body {
   user-select: none;
 }
 
+/* ===================== MODAL DOSSIER (AJOUT) ===================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+}
+
+.modal.is-open {
+  display: block;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.modal__panel {
+  position: relative;
+  width: min(920px, calc(100% - 24px));
+  margin: 90px auto 40px;
+  border-radius: calc(var(--radius) + 6px);
+
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+
+}
+
+.modal__kicker {
+  font-family: var(--title);
+  letter-spacing: 2px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.modal__title {
+  margin-top: 4px;
+  font-family: "Metal Mania", cursive;
+  letter-spacing: 6px;
+  font-size: 34px;
+  color: var(--ink);
+}
+
+.modal__close {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+.modal__close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modal__body {
+  padding: 18px;
+}
+
+.modal__text {
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 80ch;
+}
+
+.modal__hl {
+  color: var(--accent2);
+}
+
+.modal__footer {
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.modal__footnote {
+  font-size: 12px;
+  color: rgba(231, 220, 199, 0.55);
+}
+
+/* --- SYSTÈME DE LIFT (CORRECTIF) --- */
+.lift {
+  position: relative; /* Important pour que les enfants absolute se calent dessus */
+  width: 300px; /* Même taille que tes autres images */
+  height: 300px;
+  background: #000; /* Fond noir derrière */
+  overflow: hidden; /* Rien ne dépasse */
+  user-select: none; /* On ne peut pas sélectionner le texte/image */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.lift__under {
+  position: absolute;
+  inset: 0; /* Remplit tout l'espace */
+  z-index: 1; /* En dessous */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+}
+
+.lift__cover {
+  position: absolute;
+  inset: 0; /* Remplit tout l'espace */
+  z-index: 10; /* Au dessus */
+  cursor: grab;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(0); /* Position de départ */
+}
+
+.lift__cover:active {
+  cursor: grabbing;
+}
+
+.lift__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none; /* L'image ne bloque pas le clic */
+  display: block;
+}
+
+/* Le texte "SOULEVER" */
+.lift__hint {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  pointer-events: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+/* ---- Téléphone à la place du bouton ---- */
+.phoneCall{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 16px;
+  border-radius: 10px;
+
+  background: rgba(0,0,0,0.25);
+  color: #f1e6cf;
+  text-decoration: underline #6f2418;
+  cursor: pointer;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.phoneCall:hover{
+  filter: brightness(1.08);
+}
+
+.phoneIcon{
+  font-size: 18px;
+  opacity: 0.95;
+}
+
+.phoneNumber{
+  font-size: 20px;
+  opacity: 0.95;
+  text-underline-offset: var(--accent);
+}
+
+/* ---- Mode possession : on bloque les clics sur la page ---- */
+body.possession-lock{
+  cursor: none;              /* cache le curseur système (visuel) */
+}
+
+.possession-shield{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+/* Faux curseur possédé */
+.possessed-cursor{
+  position: fixed;
+  left: 0; top: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid #6f2418;
+  box-shadow: 0 0 18px rgba(225, 172, 36, 0.35);
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
