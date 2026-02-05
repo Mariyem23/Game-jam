@@ -178,7 +178,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") tryWord();
     });
   }
-<<<<<<< HEAD
+
   const decryptLink = document.getElementById("decryptLink");
 
 if (decryptLink) {
@@ -189,7 +189,7 @@ if (decryptLink) {
 }
 
 });
-=======
+
 
   // ============================================================
   // PARTIE 4 : POSSESSION TÉLÉPHONE (safe)
@@ -285,7 +285,7 @@ if (decryptLink) {
   } catch (e) {
     console.warn("Possession téléphone désactivée :", e);
   }
-}); // ✅ IMPORTANT : pas de () ici !
+; // ✅ IMPORTANT : pas de () ici !
 
 // ============================================================
 // PARTIE 5 : TITRE CORRIGIBLE + REDIRECTION
@@ -345,4 +345,4 @@ if (decryptLink) {
     closeEdit();
   });
 })();
->>>>>>> 3ffa08c0d8d862f2c75c42e9dc633914c6257f0f
+
