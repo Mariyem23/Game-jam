@@ -1,8 +1,11 @@
 // ========= CONFIG (VERSION SIMPLE) =========
-const HOME_URL = "http://127.0.0.1:5500/kaijupedia.html";   
+// Redirection vers la nouvelle page (on remonte de 2 dossiers)
+const HOME_URL = "../../kaijupedia2.html";   
+
 const TIME_LIMIT_MS = 6 * 60 * 1000;  // 6 minutes
 
-const CODE = [4, 2, 7];  // 🔐 code secret de l’exemple
+// Le code secret (d'après tes indices HTML : 4 1 9 / 5 4 7 / 2 8 7 -> Code probable 4-2-7)
+const CODE = [4, 2, 7];  
 const WHEEL_COUNT = 3;
 
 let state = {
@@ -19,6 +22,23 @@ const el = {
   status: document.getElementById("statusLine"),
   countdown: document.getElementById("countdown"),
 };
+
+// ========= GESTION BARRE DE VIE (LOCALSTORAGE) =========
+function updateGlobalHP(amount) {
+  // 1. On récupère la valeur actuelle (ou 50 par défaut)
+  let currentHP = parseInt(localStorage.getItem("kaijuHP") || "50");
+
+  // 2. On applique le changement (+5 ou -10)
+  currentHP += amount;
+
+  // 3. On empêche de dépasser 0 ou 100
+  currentHP = Math.min(100, Math.max(0, currentHP));
+
+  // 4. On sauvegarde pour la page d'accueil
+  localStorage.setItem("kaijuHP", currentHP);
+  
+  console.log(`Système mis à jour : ${amount > 0 ? '+' : ''}${amount}% (Total: ${currentHP}%)`);
+}
 
 // ========= UI BUILD =========
 function buildWheels() {
@@ -63,7 +83,7 @@ function incWheel(i, delta) {
   render();
 }
 
-// ========= CHECK =========
+// ========= CHECK (VICTOIRE) =========
 function checkCode() {
   if (!state.locked || state.redirecting) return;
 
@@ -72,6 +92,9 @@ function checkCode() {
   const ok = state.wheels.every((v, idx) => v === CODE[idx]);
 
   if (ok) {
+    // VICTOIRE : +5% de stabilité
+    updateGlobalHP(5);
+
     state.locked = false;
     el.status.textContent = "✔ Cadenas déverrouillé. Retour aux archives…";
     el.status.style.color = "rgba(160,255,190,0.95)";
@@ -83,7 +106,7 @@ function checkCode() {
   el.status.style.color = "rgba(255,140,140,0.95)";
 }
 
-// ========= TIMER + REDIRECTION =========
+// ========= TIMER + REDIRECTION (DÉFAITE) =========
 function formatMMSS(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const m = String(Math.floor(total / 60)).padStart(2, "0");
@@ -106,6 +129,9 @@ function tickCountdown() {
   if (el.countdown) el.countdown.textContent = formatMMSS(left);
 
   if (left <= 0) {
+    // DÉFAITE (TEMPS ÉCOULÉ) : -10% de stabilité
+    updateGlobalHP(-10);
+
     el.status.textContent = "⏳ Temps écoulé. Retour aux archives…";
     el.status.style.color = "rgba(255,200,120,0.95)";
     goHomeSoon(600);
