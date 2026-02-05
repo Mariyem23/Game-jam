@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KAJIU — Archives</title> <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./kaijupedia.css" />
+
+    <style>
+      .lore-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--line);
+        padding: 15px;
+        border-radius: var(--radius);
+      }
+      .lore-row img {
+        width: 300px;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--accent);
+        filter: sepia(0.5) contrast(1.2);
+      }
+      .lore-row:nth-child(even) {
+        flex-direction: row-reverse;
+      }
+      @media (max-width: 700px) {
+        .lore-row {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+
+  <audio id="bg-music" src="assets/fond.mp3" autoplay loop></audio>
+
+  <body>
+    <div class="chromeTop">
+      <div class="chromeTop__tabs">
+        <div class="tab tab--active">
+          <span class="tab__dot"></span>
+          <span class="tab__title">kaijupedia2.html</span>
+          <span class="tab__close">✕</span>
+        </div>
+        <div class="tab tab--ghost">＋</div>
+      </div>
+
+      <div class="chromeTop__controls">
+        <button class="winbtn winbtn--min" title="Réduire">—</button>
+        <button class="winbtn winbtn--max" title="Agrandir">□</button>
+        <button class="winbtn winbtn--close" title="Fermer">✕</button>
+      </div>
+    </div>
+
+    <div class="browserbar">
+      <div class="browserbar__row">
+        <div class="navbtns">
+          <button class="navbtn" title="Retour">←</button>
+          <button class="navbtn" title="Avancer">→</button>
+          <button class="navbtn" title="Rafraîchir">⟳</button>
+        </div>
+
+        <div class="address">
+          <span class="lock">🔒</span>
+          <span class="url">kaiju-archives.local/kajiupedia</span>
+        </div>
+        
+        <div class="tools">
+          <button class="navbtn" title="Menu">⋯</button>
+        </div>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__inner">
+        <nav class="nav">
+          <a href="#origines">Origines</a>
+          <a href="#top3">Top 3</a>
+          <a href="#univers">Univers</a>
+          <a href="#communaute">Communauté</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero__overlay">
+          <div class="hero__frame">
+            <h1 class="hero__title">KAJIUPEDIA</h1>
+            <h2 class="hero__subtitle">ILS VONT REVENIR</h2>
+            
+            <div class="hero__actions"></div>
+            
+          </div>
+        </div>
+        </section>
+
+      <section id="origines" class="section">
+        <div class="section__head">
+          <h3>THE ORIGINS OF KAIJU</h3>
+          <p>Données historiques et mythologiques récupérées.</p>
+        </div>
+
+        <div class="lore-container">
+          <div class="lore-row">
+            <img src="./images/image1.png" alt="Mythe" />
+            <div>
+              <h4>The Monsters of Myth</h4>
+              <p style="color: var(--muted); font-size: 14px; line-height: 1.6">
+                Depuis les temps anciens, les légendes parlent de bêtes
+                colossales dormant sous la mer ou dans la terre. Ces créatures
+                ne sont pas de simples animaux, mais des forces de la nature
+                incarnées.
+              </p>
+            </div>
+          </div>
+
+          <div class="lore-row">
+            <img src="./images/image2.png" alt="Colère" />
+            <div>
+              <h4>Nature's Wrath</h4>
+              <p style="color: var(--muted); font-size: 14px; line-height: 1.6">
+                Les Kaijus se réveillent souvent en réponse à l'arrogance de
+                l'humanité. Ils sont l'équilibre, la punition divine envoyée
+                pour remettre le monde à zéro.
+              </p>
+            </div>
+          </div>
+
+          <div class="lore-row">
+            <div class="lift" id="kaijuLift">
+              <div class="lift__under">
+                <div class="lift__gate">
+                  <div
+                    class="lift__gateTitle"
+                    style="font-size: 10px; color: red"
+                  >
+                    RESTRICTED ACCESS
+                  </div>
+                  <div class="lift__row">
+                    <input
+                      id="kaijuWord"
+                      class="lift__input"
+                      type="text"
+                      placeholder="Pass..."
+                    />
+                    <button id="kaijuGo" class="lift__btn">➜</button>
+                  </div>
+                  <div id="kaijuMsg" class="lift__msg"></div>
+                </div>
+              </div>
+
+              <div class="lift__cover" id="kaijuCover">
+                <img
+                  class="lift__img"
+                  src="./images/image3.png"
+                  alt="KAIJU"
+                  id="targetimg"
+                />
+                <div class="lift__hint">SOULEVER</div>
+              </div>
+            </div>
+
+            <div>
+              <h4>The Monsters of Myth</h4>
+              <p>Depuis les temps anciens...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="communaute" class="section section--thin">
+        <div class="signal">
+          <div>
+            <h3>Join the Kaiju Community</h3>
+            <p>Connectez-vous avec d'autres chercheurs et fans aujourd'hui.</p>
+          </div>
+          <div class="urgentRight">
+            <div
+              class="phoneCall"
+              id="phoneCall"
+              role="button"
+              tabindex="0"
+              aria-label="Numéro d'urgence"
+            >
+              <span class="phoneIcon" aria-hidden="true">☎</span>
+              <span class="phoneNumber">09 73 00 21 88</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p>© Archives Kaiju — accès surveillé</p>
+      </footer>
+    </main>
+
+    <div class="system-hud">
+      <div class="hp-widget">
+        <span class="hp-label">INSTABILITE DU PORTAIL :</span>
+        <div class="hp-track">
+          <div class="hp-fill" id="hpFill" style="width: 50%;"></div>
+        </div>
+        <span id="hpText" class="hp-val">50%</span>
+      </div>
+    </div>
+
+    <script src="./kaijupedia.js"></script>
+  </body>
+</html>

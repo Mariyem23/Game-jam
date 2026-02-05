@@ -588,3 +588,67 @@ body {
 .winbtn--close span::after {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
+.abandonRow{
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn--ghost{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(200, 160, 110, 0.25);
+  color: rgba(231,220,199,0.9);
+}
+
+.btn--ghost:hover{
+  border-color: rgba(255, 70, 70, 0.55);
+  color: rgba(255, 140, 140, 0.95);
+}
+
+/* Tooltip simple basé sur data-tip */
+.btn[data-tip]{
+  position: relative;
+}
+
+.btn[data-tip]::after{
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-family: var(--title);
+  letter-spacing: 1px;
+  font-size: 11px;
+
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255, 70, 70, 0.35);
+  color: rgba(255, 140, 140, 0.95);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.btn[data-tip]::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(255, 70, 70, 0.35);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.btn[data-tip]:hover::after{
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+.btn[data-tip]:hover::before{
+  opacity: 1;
+}
+

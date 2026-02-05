@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="./decrypt.css" />
   </head>
 
+<audio id="bg-music" src="../../assets/fond.mp3" autoplay loop></audio>
+<script src="../../bgm-persist.js"></script>
   <body>
     <!-- Winbar -->
     <div class="winbar">
@@ -92,6 +94,11 @@
                 <input id="guessInput" type="text" placeholder="..." autocomplete="off" />
                 <button class="btn" id="guessBtn" type="button">Valider</button>
               </div>
+              <div class="abandonRow">
+                <button class="btn btn--ghost" id="abandonBtn" type="button" data-tip="Vous allez perdre 15% de votre progression">
+                  ABANDONNER
+                </button>
+              </div>
 
               <p class="small muted">
                 Conseil : ne devine pas trop tot. La chose ecoute.
@@ -103,7 +110,6 @@
 
       <!-- Overlays -->
       <div class="glitch" id="glitchLayer" aria-hidden="true"></div>
-      <div class="popups" id="popups" aria-hidden="true"></div>
     </main>
 
     <script src="./decrypt.js"></script>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Protocole de Fermeture</title>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --alert-red: #ff3131;
+            --dark-bg: #0a0a0a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark-bg);
+            color: var(--alert-red);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            border: 4px solid var(--alert-red);
+            box-sizing: border-box;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .glitch-item {
+            position: absolute;
+            width: 80px;
+            height: 50px;
+            background: #d0a509;
+            border: 2px solid var(--alert-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: crosshair;
+            font-weight: bold;
+            font-size: 30px;
+            box-shadow: 0 0 10px var(--alert-red);
+            transition: transform 0.1s, background-color 0.1s;
+        }
+
+        .glitch-item::before {
+            content: "⚠️ ERROR";
+            font-size: 18px;
+            position: absolute;
+            top: -20px; /* Positionné juste au-dessus de la boîte */
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: var(--alert-red);
+            white-space: nowrap;
+}
+
+        /* Fenêtre de Game Over */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(100, 0, 0, 0.9);
+            color: white;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        button {
+            background: #f2bf07;
+            border: none;
+            padding: 15px 30px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: 'Courier New';
+        }
+    </style>
+</head>
+<audio id="bg-music" src="assets/fond.mp3" autoplay loop></audio>
+<body>
+
+    <div id="ui">
+        <h1>PORTAL SECURITY STABILITY: <span id="score">50</span>%</h1>
+        <p>FERMEZ LES ERREURS AVANT QU'ELLES NE TRAVERSENT LE PORTAIL</p>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div id="overlay">
+        <h1>PORTAIL OUVERT - KAIJU ARRIVE</h1>
+        <p>Le monde est en danger.</p>
+        <button onclick="resetGame()">REINITIALISER LE SYSTEME</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const overlay = document.getElementById('overlay');
+        
+        let stability = 50; 
+        let gameActive = true;
+        let spawnRate = 750;
+
+        // --- AUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playBeep(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            } else {
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            }
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function createGlitch() {
+            if (!gameActive) return;
+
+            const item = document.createElement('div');
+            item.className = 'glitch-item';
+            item.innerText = "❌";
+            
+            const x = Math.random() * (window.innerWidth - 100);
+            item.style.left = x + 'px';
+            item.style.top = '-100px';
+
+            container.appendChild(item);
+
+            let posY = -100;
+            let speed = 3 + Math.random() * 5;
+
+            const fallInterval = setInterval(() => {
+                if (!gameActive) {
+                    clearInterval(fallInterval);
+                    item.remove();
+                    return;
+                }
+
+                posY += speed;
+                item.style.top = posY + 'px';
+
+                if (posY > window.innerHeight) {
+                    clearInterval(fallInterval);
+                    item.remove();
+                    playBeep('fail');
+                    updateStability(-10);
+                }
+            }, 20);
+
+            item.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                if (!gameActive) return;
+                clearInterval(fallInterval);
+                playBeep('success');
+                
+                
+                updateStability(4);
+                setTimeout(() => item.remove(), 30);
+            });
+        }
+
+        function updateStability(amount) {
+            stability += amount;
+            if (stability >= 100) {
+                stability = 100;
+                winGame();
+            }
+            if (stability < 0) stability = 0;
+            
+            scoreElement.innerText = stability;
+            scoreElement.style.color = stability < 30 ? "var(--alert-red)" : "var(--neon-green)";
+
+            if (stability <= 0) gameOver();
+        }
+
+        function winGame() {
+    gameActive = false;
+    container.innerHTML = "";
+    const winMessage = document.createElement('div');
+    winMessage.style.cssText = `
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center; 
+        color: var(--neon-green);
+        border: 5px double var(--neon-green); 
+        padding: 40px;
+        background: rgba(0, 20, 0, 0.95); 
+        box-shadow: 0 0 30px var(--neon-green);
+        z-index: 2000;
+    `;
+    winMessage.innerHTML = `
+        <h1 style="text-shadow: 0 0 10px var(--neon-green);">PORTAIL VERROUILLÉ</h1>
+        <p>CODE DE DÉCRYPTAGE :</p>
+        <h2 style="font-size: 3em; background: #002200; padding: 10px; border: 1px solid var(--neon-green);">K-739</h2>
+        <p><br>ACCÈS SYSTÈME RÉTABLI.<br>FERMEZ CETTE PAGE POUR FINALISER.</p>
+    `;
+    container.appendChild(winMessage);
+}
+
+        function gameOver() {
+            gameActive = false;
+            overlay.style.display = 'flex';
+        }
+
+        function resetGame() {
+            stability = 50;
+            scoreElement.innerText = stability;
+            gameActive = true;
+            overlay.style.display = 'none';
+            container.innerHTML = '';
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            createGlitch();
+            let nextSpawn = spawnRate - (100 - stability) * 4; 
+            setTimeout(gameLoop, Math.max(nextSpawn, 350));
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
