@@ -242,6 +242,17 @@
             const ctx = canvas.getContext("2d");
             const kaijuImg = new Image();
             kaijuImg.src = "image/tete_de_kaijo.png";
+            // ===== EXPLOSION (quand tu meurs) =====
+            const DEATHFX = {
+                on: false,
+                x: 0,
+                y: 0,
+                t: 0,
+                dur: 0.9,     // durée explosion
+            };
+
+            let screenShake = 0; // intensité tremblement
+            let loseTextDelay = 0; // temps avant d'afficher "T'AS PERDU"
             function resizeCanvasToDisplaySize() {
                 const r = canvas.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
@@ -788,8 +799,17 @@ updateEnergyUI();
             }
 
             function killPlayer(reason) {
+                loseTextDelay = 0.81; // 0.55s avant le texte
                 gameOver = true;
                 gameOverMsg = "T'as perdu 😵 — " + reason;
+
+                // 🔥 déclenche explosion à la position du joueur
+                DEATHFX.on = true;
+                DEATHFX.t = 0;
+                DEATHFX.x = playerPos.x;
+                DEATHFX.y = playerPos.y;
+
+                screenShake = 18; // tremblement fort
 
                 // stop feu
                 FIRE.state = "idle";
@@ -1182,7 +1202,22 @@ updateEnergyUI();
                 const dt = Math.min(0.033, (now - lastTime) / 1000);
                 lastTime = now;
 
-                if (gameOver || gameWon) return;
+                // Si gameOver/gameWon, on stop le gameplay, MAIS on laisse les FX tourner
+                if (gameOver || gameWon) {
+                    // update explosion mort
+                    if (DEATHFX.on) {
+                        DEATHFX.t += dt;
+                        if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
+                    }
+
+                    // délai texte "t'as perdu"
+                    if (loseTextDelay > 0) loseTextDelay -= dt;
+
+                    // amortit le tremblement
+                    screenShake *= Math.pow(0.001, dt);
+
+                    return;
+                }
                 // ===== BOMBE AUTO =====
                 bombTimer -= dt;
                 if (bombTimer <= 0) {
@@ -1226,6 +1261,14 @@ updateEnergyUI();
                 updateBomb(dt);
                 updateKaiju(dt);
                 updateEnergyFX(dt);
+                // update explosion mort
+                if (DEATHFX.on) {
+                    DEATHFX.t += dt;
+                    if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
+                }
+
+                // amortit le tremblement
+                screenShake *= Math.pow(0.001, dt); // decay smooth
             }
 
 
@@ -1385,6 +1428,66 @@ updateEnergyUI();
                     ctx.restore();
                 }
             }
+            function drawDeathExplosion() {
+                if (!DEATHFX.on) return;
+
+                const t = Math.min(1, DEATHFX.t / DEATHFX.dur);
+                const x = DEATHFX.x, y = DEATHFX.y;
+
+                // easing
+                const easeOut = 1 - Math.pow(1 - t, 3);
+
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                // FLASH central
+                {
+                    const R = 30 + easeOut * 220;
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+                    g.addColorStop(0.0, `rgba(255,255,255,${0.85 * (1 - t)})`);
+                    g.addColorStop(0.25, `rgba(120,240,255,${0.55 * (1 - t)})`);
+                    g.addColorStop(1.0, `rgba(0,180,255,0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // ONDE DE CHOC (anneau)
+                {
+                    const R = 60 + easeOut * 300;
+                    ctx.strokeStyle = `rgba(180,245,255,${0.55 * (1 - t)})`;
+                    ctx.lineWidth = 18 * (1 - t) + 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // PARTICULES (explosion en étoiles)
+                {
+                    const count = 26;
+                    for (let i = 0; i < count; i++) {
+                        const a = (i / count) * Math.PI * 2;
+                        const sp = 120 + i * 6;
+                        const px = x + Math.cos(a) * easeOut * sp;
+                        const py = y + Math.sin(a) * easeOut * sp;
+
+                        ctx.fillStyle = `rgba(200,255,255,${0.65 * (1 - t)})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 6 * (1 - t) + 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.restore();
+
+                // petit voile sombre (impact)
+                ctx.save();
+                ctx.fillStyle = `rgba(0,0,0,${0.25 * t})`;
+                ctx.fillRect(-99999, -99999, 200000, 200000);
+                ctx.restore();
+            }
             // ====== Draw ======
             function draw() {
                 resizeCanvasToDisplaySize();
@@ -1395,6 +1498,12 @@ updateEnergyUI();
                 const { ox, oy } = getCenterOffset();
                 ctx.save();
                 ctx.translate(ox, oy);
+                // tremblement caméra
+                if (screenShake > 0.2) {
+                    const sx = (Math.random() * 2 - 1) * screenShake;
+                    const sy = (Math.random() * 2 - 1) * screenShake;
+                    ctx.translate(sx, sy);
+                }
 
                 // edges
                 for (const [aId, bId] of edges) {
@@ -1483,9 +1592,8 @@ updateEnergyUI();
                 drawKaiju();
                 drawEnergyModule();
                 drawEnergyFX();
-
-
                 drawPlayerFancy(playerPos.x, playerPos.y);
+                drawDeathExplosion();
 
                 // texte édition
                 if (editMode) {
@@ -1503,7 +1611,7 @@ updateEnergyUI();
 
                 ctx.restore();
                 //jeu terminer
-                if (gameOver || gameWon) {
+                if ((gameOver || gameWon) && loseTextDelay <= 0) {
                     ctx.fillStyle = "rgba(0,0,0,0.45)";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
