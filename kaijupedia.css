@@ -761,8 +761,8 @@ body {
 /* --- SYSTÈME DE LIFT (CORRECTIF) --- */
 .lift {
   position: relative; /* Important pour que les enfants absolute se calent dessus */
-  width: 150px; /* Même taille que tes autres images */
-  height: 150px;
+  width: 300px; /* Même taille que tes autres images */
+  height: 300px;
   border-radius: 8px;
   border: 1px solid var(--accent);
   background: #000; /* Fond noir derrière */

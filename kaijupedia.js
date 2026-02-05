@@ -123,15 +123,20 @@ window.addEventListener("DOMContentLoaded", () => {
   cover.addEventListener("pointercancel", onUp);
 
   // --- Vérification du Mot de Passe ---
+  // --- Vérification du Mot de Passe ---
   function tryWord() {
-    const v = input.value.trim().toLowerCase();
+    // On nettoie l'entrée et on met tout en majuscules pour comparer (plus facile)
+    const v = input.value.trim().toUpperCase();
 
-    if (v === "kaiju") {
+    // LE NOUVEAU CODE : K-739
+    if (v === "K-739") {
       msg.style.color = "#4ff";
       msg.textContent = "ACCÈS AUTORISÉ";
-      // Redirection vers ton jeu
+      
+      // Redirection vers la page rituel
+      // D'après ton image, le chemin est : mini-jeux -> jeu1 -> rituel.html
       setTimeout(() => {
-        window.location.href = "./mini-jeux/rituel/index.html";
+        window.location.href = "./mini-jeux/jeu1/rituel.html";
       }, 800);
       return;
     }
