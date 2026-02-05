@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>KAIJU — Archives</title>
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,14 +17,51 @@
       rel="stylesheet"
     />
 
+    <!-- CSS -->
     <link rel="stylesheet" href="./kaijupedia.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
   </head>
 
   <body>
+    <!-- ================= TOP BAR (ONGLETS + BOUTONS FENÊTRE) ================= -->
+    <div class="chromeTop">
+      <div class="chromeTop__tabs">
+        <div class="tab tab--active">
+          <span class="tab__dot"></span>
+          <span class="tab__title">kaijupedia.html</span>
+          <span class="tab__close">✕</span>
+        </div>
+
+        <div class="tab tab--ghost">＋</div>
+      </div>
+
+      <div class="chromeTop__controls">
+        <button class="winbtn winbtn--min" title="Réduire">—</button>
+        <button class="winbtn winbtn--max" title="Agrandir">□</button>
+        <button class="winbtn winbtn--close" title="Fermer">✕</button>
+      </div>
+    </div>
+
+    <!-- ================= BARRE D’ADRESSE ================= -->
+    <div class="browserbar">
+      <div class="browserbar__row">
+        <div class="navbtns">
+          <button class="navbtn" title="Retour">←</button>
+          <button class="navbtn" title="Avancer">→</button>
+          <button class="navbtn" title="Rafraîchir">⟳</button>
+        </div>
+
+        <div class="address">
+          <span class="lock">🔒</span>
+          <span class="url">kaiju-archives.local/kaijupedia</span>
+        </div>
+
+        <div class="tools">
+          <button class="navbtn" title="Menu">⋯</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= NAV INTERNE DU SITE ================= -->
     <header class="topbar">
       <div class="topbar__inner">
         <nav class="nav">
@@ -35,20 +73,20 @@
       </div>
     </header>
 
+    <!-- ================= CONTENU ================= -->
     <main>
       <section class="hero">
         <div class="hero__overlay">
           <div class="hero__frame">
-            <h1 class="hero__title">KAIJU</h1>
+            <h1 class="hero__title">KAIJUPEDIA</h1>
             <h2 class="hero__subtitle">LES DIEUX DESTRUCTION</h2>
 
-            <div class="hero__actions">
-              <a class="btn-archives" href="#archives"
-                >ENTRER DANS LES ARCHIVES</a
-              >
-            </div>
+            <div class="hero__actions"></div>
           </div>
         </div>
+        <a href="./mini-jeux/jeu2/cadenas.html" class="btn-archives" id="archivesBtn">
+          ENTRER DANS LES ARCHIVES
+        </a>
       </section>
 
       <section id="archives" class="section">
@@ -66,9 +104,7 @@
               <h4>Origines</h4>
               <span class="tag">Chroniques</span>
             </div>
-            <p>
-              Fractures, portails et événements fondateurs. D’où viennent-ils ?
-            </p>
+            <p>Fractures, portails et événements fondateurs.</p>
             <a class="card__link" href="#">Ouvrir le dossier →</a>
           </article>
 
@@ -77,7 +113,7 @@
               <h4>Bestiaire</h4>
               <span class="tag">Entités</span>
             </div>
-            <p>Types, classes, faiblesses et comportements observés.</p>
+            <p>Types, classes et faiblesses connues.</p>
             <a class="card__link" href="#">Consulter →</a>
           </article>
 
@@ -86,7 +122,7 @@
               <h4>Mythes</h4>
               <span class="tag">Cultes</span>
             </div>
-            <p>Rituels, symboles et textes anciens liés aux Kaijus.</p>
+            <p>Textes anciens et rituels interdits.</p>
             <a class="card__link" href="#">Déchiffrer →</a>
           </article>
 
@@ -95,7 +131,7 @@
               <h4>Apparitions</h4>
               <span class="tag">Rapports</span>
             </div>
-            <p>Lieux, dates, témoignages. Cartographiez la menace.</p>
+            <p>Lieux, dates et témoignages.</p>
             <a class="card__link" href="#">Afficher →</a>
           </article>
         </div>
@@ -105,14 +141,9 @@
         <div class="signal">
           <div>
             <h3>Canal d’urgence</h3>
-            <p>
-              Signalez une anomalie. Les données seront archivées et analysées
-              automatiquement.
-            </p>
+            <p>Signalez une anomalie détectée dans les archives.</p>
           </div>
-          <button class="btn btn--primary" type="button">
-            ENVOYER UN SIGNAL
-          </button>
+          <button class="btn btn--primary">ENVOYER UN SIGNAL</button>
         </div>
       </section>
 
@@ -120,25 +151,6 @@
         <p>© Archives Kaiju — accès surveillé</p>
       </footer>
     </main>
+    <script src="./kaijupedia.js"></script>
   </body>
-  <div class="winbar">
-    <div class="winbar__left">
-      <span class="winbar__icon"></span>
-      <span class="winbar__title">Kaiju Archives</span>
-    </div>
-
-    <div class="winbar__controls">
-      <button class="winbtn winbtn--min" aria-label="Réduire" title="Réduire">
-        <span></span>
-      </button>
-
-      <button class="winbtn winbtn--max" aria-label="Agrandir" title="Agrandir">
-        <span></span>
-      </button>
-
-      <button class="winbtn winbtn--close" aria-label="Fermer" title="Fermer">
-        <span></span>
-      </button>
-    </div>
-  </div>
 </html>
