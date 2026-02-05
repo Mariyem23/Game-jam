@@ -356,7 +356,7 @@ function applyProgressPenalty(percent){
 if (el.abandonBtn){
   el.abandonBtn.addEventListener("click", () => {
     applyProgressPenalty(15);
-    window.location.href = "kaijupedia.html";
+    window.location.href = "http://127.0.0.1:5500/kaijupedia3.html";
   });
 }
 

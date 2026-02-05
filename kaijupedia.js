@@ -179,6 +179,18 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const decryptLink = document.getElementById("decryptLink");
+
+if (decryptLink) {
+  decryptLink.addEventListener("click", () => {
+    // Redirection vers ton mini-jeu de decrypt
+    window.location.href = "http://127.0.0.1:5500/mini-jeux/jeu3/decrypt.html";
+  });
+}
+
+});
+
+
   // ============================================================
   // PARTIE 4 : POSSESSION TÉLÉPHONE (safe)
   // ============================================================
@@ -273,7 +285,7 @@ window.addEventListener("DOMContentLoaded", () => {
   } catch (e) {
     console.warn("Possession téléphone désactivée :", e);
   }
-}); // ✅ IMPORTANT : pas de () ici !
+; // ✅ IMPORTANT : pas de () ici !
 
 // ============================================================
 // PARTIE 5 : TITRE CORRIGIBLE + REDIRECTION
@@ -333,3 +345,4 @@ window.addEventListener("DOMContentLoaded", () => {
     closeEdit();
   });
 })();
+
