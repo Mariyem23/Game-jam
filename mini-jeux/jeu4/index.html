@@ -42,6 +42,7 @@ body{
       transparent 70%
     ),
     #0a0a0a;
+    font-family: "Cinzel", serif; /* Police globale */
 }
 
 /* ton app prend tout l’écran */
@@ -204,6 +205,65 @@ canvas{
   display:block;
 }
 
+/* ===== OVERLAY FIN DE JEU (NOUVEAU) ===== */
+#gameOverOverlay {
+    display: none; /* Caché par défaut */
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    backdrop-filter: blur(5px);
+}
+
+.end-card {
+    background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
+    border: 2px solid var(--accent);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(140, 47, 31, 0.4);
+    max-width: 500px;
+}
+
+.end-title {
+    font-size: 32px;
+    color: #fff;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+.end-msg {
+    color: #e7dcc7;
+    font-size: 16px;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.end-btn {
+    display: inline-block;
+    padding: 15px 30px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-family: "Cinzel", serif;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.end-btn:hover {
+    background: var(--accent2);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(182,74,42,0.6);
+}
+
 /* responsive */
 @media (max-width:720px){
   body{overflow:hidden}
@@ -212,12 +272,12 @@ canvas{
   .energyBar{width:140px}
 }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="app">
 
-        <!-- UI TOP -->
         <div class="hud">
             <div class="hud-left">
                 <div class="pill objective">
@@ -237,26 +297,41 @@ canvas{
                         </div>
                     </div>
                 </div>
-                <button class="btn" id="toggleEdit">Mode édition: OFF</button>
-                <button class="btn" id="reset">Reset positions</button>
+                <button class="btn" id="toggleEdit" style="display:none">Mode édition: OFF</button>
+                <button class="btn" id="reset" style="display:none">Reset</button>
             </div>
         </div>
 
-        <!-- GAME FULL -->
         <div class="stage">
             <canvas id="game" width="1280" height="720"></canvas>
+            
+            <div id="gameOverOverlay">
+                <div class="end-card">
+                    <div class="end-title" id="endTitle">TITRE</div>
+                    <div class="end-msg" id="endMessage">Message</div>
+                    <button class="end-btn" id="endButton">RETOUR AUX ARCHIVES</button>
+                </div>
+            </div>
         </div>
 
     </div>
-
-
 
     <script>
         (() => {
             const canvas = document.getElementById("game");
             const ctx = canvas.getContext("2d");
             const kaijuImg = new Image();
-            kaijuImg.src = "image/tete_de_kaijo.png";
+            kaijuImg.src = "image/tete_de_kaijo.png"; // Assure-toi que l'image existe
+            
+            // ===== GESTION HP (NOUVEAU) =====
+            function updateGlobalHP(amount) {
+                let currentHP = parseInt(localStorage.getItem("kaijuHP") || "50");
+                currentHP += amount;
+                currentHP = Math.min(100, Math.max(0, currentHP));
+                localStorage.setItem("kaijuHP", currentHP);
+                console.log(`Système mis à jour : ${amount > 0 ? '+' : ''}${amount}% (Total: ${currentHP}%)`);
+            }
+
             // ===== EXPLOSION (quand tu meurs) =====
             const DEATHFX = {
                 on: false,
@@ -268,6 +343,7 @@ canvas{
 
             let screenShake = 0; // intensité tremblement
             let loseTextDelay = 0; // temps avant d'afficher "T'AS PERDU"
+            
             function resizeCanvasToDisplaySize() {
                 const r = canvas.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
@@ -283,14 +359,22 @@ canvas{
 
             window.addEventListener("resize", resizeCanvasToDisplaySize);
 
-            const uiHovered = document.getElementById("hovered");   // peut être null
-            const uiSelected = document.getElementById("selected"); // peut être null
+            const uiHovered = document.getElementById("hovered");   
+            const uiSelected = document.getElementById("selected"); 
             const btnToggleEdit = document.getElementById("toggleEdit");
             const btnReset = document.getElementById("reset");
+            
+            // Overlay elements
+            const overlay = document.getElementById("gameOverOverlay");
+            const endTitle = document.getElementById("endTitle");
+            const endMessage = document.getElementById("endMessage");
+            const endButton = document.getElementById("endButton");
 
             let gameOver = false;
             let gameWon = false;
             let gameOverMsg = "";
+            let endMsg = "";
+            let hpUpdated = false; // Pour ne pas mettre à jour 50 fois
 
             const energyUI = document.getElementById("energy");
             // ===== VICTORY FX =====
@@ -303,6 +387,7 @@ canvas{
             };
 
             let winTextDelay = 0; // délai avant "TU AS GAGNÉ"
+            
             function updateEnergyUI() {
                 energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
                 const p = Math.max(0, Math.min(1, ENERGY.collected / ENERGY.goal));
@@ -319,6 +404,7 @@ canvas{
 
             let bombTimer = 10.0;     // première bombe après 10s
             const BOMB_INTERVAL = 3.0; // ensuite toutes les 3s
+            
             // ====== TERRAIN ======
             const initialNodes = [
                 { id: 0, x: 220, y: 520 },
@@ -347,6 +433,7 @@ canvas{
             ];
 
             let nodes = initialNodes.map(n => ({ ...n }));
+            
             function getNodesBounds() {
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 for (const n of nodes) {
@@ -394,6 +481,10 @@ canvas{
                 ENERGY.collected = 0;
                 energyUI.textContent = "0";
                 spawnEnergyModule();
+                gameOver = false;
+                gameWon = false;
+                hpUpdated = false;
+                overlay.style.display = "none";
             }
 
             // ====== Helpers ======
@@ -407,7 +498,7 @@ canvas{
                 const scaleX = canvas.width / r.width;
                 const scaleY = canvas.height / r.height;
 
-                const { ox, oy } = getCenterOffset(); // important: centrage
+                const { ox, oy } = getCenterOffset();
 
                 return {
                     x: (evt.clientX - r.left) * scaleX - ox,
@@ -425,20 +516,14 @@ canvas{
 
             function getNode(id) { return nodes.find(n => n.id === id); }
 
-
-            //Fonction pour faire apparaître un module sur une case aléatoire
-            function randomInt(max) { return Math.floor(Math.random() * max); }
-
             function spawnEnergyModule() {
                 let newId;
-
                 do {
                     newId = nodes[Math.floor(Math.random() * nodes.length)].id;
                 } while (
-                    newId === ENERGY.nodeId ||   // pas la même case
-                    newId === playerNodeId       // pas sous le joueur
+                    newId === ENERGY.nodeId ||   
+                    newId === playerNodeId       
                 );
-
                 ENERGY.nodeId = newId;
             }
 
@@ -456,7 +541,6 @@ canvas{
                     if (ENERGY.collected >= ENERGY.goal) {
                         gameWon = true;
 
-                        // FX victoire au centre du joueur
                         WINFX.on = true;
                         WINFX.t = 0;
                         WINFX.x = playerPos.x;
@@ -465,9 +549,8 @@ canvas{
                         winTextDelay = 0.65;
                         screenShake = 10;
 
-                        endMsg = `Bravo Tu as collecté ${ENERGY.collected} modules d'énergie !`;
+                        endMsg = `Excellente récupération ! STABILITÉ SYSTÈME : +5%`;
                     } else {
-                        // ✅ IMPORTANT : déplacer le module ailleurs
                         spawnEnergyModule();
                     }
                 }
@@ -478,10 +561,9 @@ canvas{
             let playerPos = { x: 0, y: 0 };
             let playerTarget = { x: 0, y: 0 };
             let isMoving = false;
-            let playerTrail = []; // traînée (positions)
+            let playerTrail = [];
             const TRAIL_MAX = 14;
-
-            const PLAYER_SPEED = 520; // px/s
+            const PLAYER_SPEED = 520; 
 
             function initPlayer() {
                 const start = getNode(playerNodeId);
@@ -507,31 +589,27 @@ canvas{
                 playerTarget.y = dest.y;
             }
 
-            // ====== KAIJU (spawn sur case 10, chase 7s, respawn timer) ======********************************************************************
+            // ====== KAIJU (SYSTEME) ======
             const KAIJU = {
-                state: "idle",      // "idle" | "warning" | "active"
+                state: "idle",      
                 nodeId: 10,
                 pos: { x: 0, y: 0 },
                 target: { x: 0, y: 0 },
                 moving: false,
-
-                // timers
-                spawnIn: 25.0,      // 1ère apparition après 30s
-                nextInterval: 10.0, // ensuite toutes les 15s
-                activeLeft: 0,      // temps restant en chase
-
-                // warning blink
+                spawnIn: 25.0,      
+                nextInterval: 10.0, 
+                activeLeft: 0,      
                 wT: 0,
-                wStep: 0,           // 0 ON, 1 OFF, 2 ON
+                wStep: 0,           
                 wVisible: true,
             };
             let kaijuTrail = [];
-            const KTRAIL_MAX = 18; // + grand = plus long
+            const KTRAIL_MAX = 18; 
             const KAIJU_WARN_ON = 0.5;
             const KAIJU_WARN_OFF = 0.5;
-            const KAIJU_ACTIVE_DURATION = 8.0;         // chase 8s
-            const KAIJU_SPEED = PLAYER_SPEED * 0.7;   // presque pareil que joueur 
-            let kaijuStepTimer = 0.0;                  // tempo décision de pas
+            const KAIJU_ACTIVE_DURATION = 8.0;         
+            const KAIJU_SPEED = PLAYER_SPEED * 0.7;   
+            let kaijuStepTimer = 0.0;                  
 
             function initKaijuSpawnSystem() {
                 KAIJU.state = "idle";
@@ -544,10 +622,8 @@ canvas{
                 KAIJU.target.x = start.x; KAIJU.target.y = start.y;
             }
 
-            // plus court chemin: renvoie le "prochain pas" vers goal
             function bfsNextStep(startId, goalId) {
                 if (startId === goalId) return startId;
-
                 const q = [startId];
                 const prev = new Map();
                 prev.set(startId, null);
@@ -557,9 +633,7 @@ canvas{
                     for (const nb of (adj.get(cur) || [])) {
                         if (prev.has(nb)) continue;
                         prev.set(nb, cur);
-
                         if (nb === goalId) {
-                            // remonter jusqu'au premier pas
                             let step = nb;
                             let p = prev.get(step);
                             while (p !== startId && p !== null) {
@@ -575,13 +649,11 @@ canvas{
             }
 
             function startKaijuWarning() {
-                // place kaiju sur node 10 (sans être visible "active" encore)
                 KAIJU.nodeId = 10;
                 const n = getNode(10);
                 KAIJU.pos.x = n.x; KAIJU.pos.y = n.y;
                 KAIJU.target.x = n.x; KAIJU.target.y = n.y;
                 KAIJU.moving = false;
-
                 KAIJU.state = "warning";
                 KAIJU.wT = 0;
                 KAIJU.wStep = 0;
@@ -603,21 +675,17 @@ canvas{
             function updateKaiju(dt) {
                 if (gameOver || gameWon) return;
 
-                // timer spawn global
                 if (KAIJU.state === "idle") {
                     KAIJU.spawnIn -= dt;
                     if (KAIJU.spawnIn <= 0) {
                         startKaijuWarning();
-                        // prépare le prochain spawn (dans 20s) — on le remettra après fin de chase
                         KAIJU.spawnIn = KAIJU.nextInterval;
                     }
                     return;
                 }
 
-                // warning blink 2 fois
                 if (KAIJU.state === "warning") {
                     KAIJU.wT += dt;
-
                     if (KAIJU.wStep === 0) {
                         KAIJU.wVisible = true;
                         if (KAIJU.wT >= KAIJU_WARN_ON) { KAIJU.wT = 0; KAIJU.wStep = 1; }
@@ -633,7 +701,6 @@ canvas{
                     return;
                 }
 
-                // active chase
                 if (KAIJU.state === "active") {
                     KAIJU.activeLeft -= dt;
                     if (KAIJU.activeLeft <= 0) {
@@ -641,7 +708,6 @@ canvas{
                         return;
                     }
 
-                    // décide un pas toutes les ~0.8s (ajuste)
                     kaijuStepTimer -= dt;
                     if (kaijuStepTimer <= 0 && !KAIJU.moving) {
                         const next = bfsNextStep(KAIJU.nodeId, playerNodeId);
@@ -652,12 +718,10 @@ canvas{
                             KAIJU.target.y = dest.y;
                             KAIJU.moving = true;
                         }
-                        kaijuStepTimer = 0.6 + Math.random() * 0.4; // 0.6–1.0s
+                        kaijuStepTimer = 0.6 + Math.random() * 0.4; 
                     }
 
-                    // animation déplacement kaiju
                     if (KAIJU.moving) {
-                        // Trail (chaleur) pendant le mouvement
                         kaijuTrail.push({ x: KAIJU.pos.x, y: KAIJU.pos.y, life: 1 });
                         if (kaijuTrail.length > KTRAIL_MAX) kaijuTrail.shift();
                         const dx = KAIJU.target.x - KAIJU.pos.x;
@@ -670,7 +734,6 @@ canvas{
                             KAIJU.pos.y = KAIJU.target.y;
                             KAIJU.moving = false;
 
-                            // si kaiju arrive sur la case du joueur -> perdu
                             if (KAIJU.nodeId === playerNodeId) {
                                 killPlayer("Le Kaiju t'a rattrapé !");
                             }
@@ -678,7 +741,6 @@ canvas{
                             KAIJU.pos.x += (dx / dist) * step;
                             KAIJU.pos.y += (dy / dist) * step;
                         }
-                        // Fade de la trail (plus lente = plus visible)
                         for (const p of kaijuTrail) p.life -= dt * 1.1;
                         kaijuTrail = kaijuTrail.filter(p => p.life > 0);
                     }
@@ -687,115 +749,87 @@ canvas{
 
             function drawKaiju() {
                 if (KAIJU.state === "idle") return;
-
                 const x = KAIJU.pos.x;
                 const y = KAIJU.pos.y;
-
                 ctx.save();
 
-                // ===== TRAIL BLEUE (forte + contrastée) =====
                 if (kaijuTrail.length >= 2) {
                     ctx.save();
                     ctx.globalCompositeOperation = "lighter";
-
                     for (let i = 0; i < kaijuTrail.length - 1; i++) {
                         const a = kaijuTrail[i];
                         const b = kaijuTrail[i + 1];
-                        const t = a.life; // 1 -> 0
-
+                        const t = a.life; 
                         const dx = b.x - a.x;
                         const dy = b.y - a.y;
                         const ang = Math.atan2(dy, dx);
                         const dist = Math.hypot(dx, dy);
-
                         ctx.save();
                         ctx.translate(a.x, a.y);
                         ctx.rotate(ang);
-
                         const w = Math.max(30, dist * 1.2);
                         const h = 34;
-
-                        // couche externe (bleu intense)
                         ctx.fillStyle = `rgba(0, 170, 255, ${0.55 * t})`;
                         roundRectFill(-w * 0.25, -h / 2, w, h, 999);
-
-                        // coeur (presque blanc)
                         ctx.fillStyle = `rgba(220, 250, 255, ${0.22 * t})`;
                         roundRectFill(-w * 0.12, -h * 0.32, w * 0.78, h * 0.64, 999);
-
                         ctx.restore();
                     }
-
                     ctx.globalCompositeOperation = "source-over";
                     ctx.restore();
                 }
 
-                // ===== HALO BLEU AUTOUR (plus fort si bouge) =====
                 const heat = KAIJU.moving ? 1.2 : 0.7;
-
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-
                 ctx.fillStyle = `rgba(0, 170, 255, ${0.22 * heat})`;
                 ctx.beginPath();
                 ctx.arc(x, y, 60 * heat, 0, Math.PI * 2);
                 ctx.fill();
-
                 ctx.fillStyle = `rgba(0, 120, 255, ${0.16 * heat})`;
                 ctx.beginPath();
                 ctx.arc(x, y, 42 * heat, 0, Math.PI * 2);
                 ctx.fill();
-
                 ctx.globalCompositeOperation = "source-over";
                 ctx.restore();
 
-                // ===== IMAGE KAIJU =====
                 const size = 120;
                 ctx.drawImage(kaijuImg, x - size / 2, y - size / 2, size, size);
-
                 ctx.restore();
             }
 
-            // ====== ATTAQUE FEU (bordure -> ligne -> projectile) ======*******************************************************************************
-
+            // ====== ATTAQUE FEU ======
             const FIRE = {
-                state: "idle",    // "idle" | "warning" | "firing"
-                axis: "h",        // "h" ou "v"
+                state: "idle",    
+                axis: "h",        
                 lineX: 0,
                 lineY: 0,
                 t: 0,
-                blinkStep: 0,     // 0 ON, 1 OFF, 2 ON
+                blinkStep: 0,     
                 visible: true,
-                projectile: null, // {x,y,vx,vy}
+                projectile: null, 
             };
 
             const WARN_ON = 0.5;
             const WARN_OFF = 0.5;
-            const FIRE_SPEED = PLAYER_SPEED * 1.6;  // ~ vitesse joueur
-            const FIRE_RADIUS = 40;           // 🔥 plus gros (augmente si tu veux)
+            const FIRE_SPEED = PLAYER_SPEED * 1.6;  
+            const FIRE_RADIUS = 40;           
             const PLAYER_RADIUS = 18;
-            const WARNING_SCALE = 2.4;              // ⚠️ icône plus grande
+            const WARNING_SCALE = 2.4;              
             function startFireAttack(axis) {
-
-
                 FIRE.axis = axis;
-
-                // Important: on "verrouille" la ligne au moment du warning (sinon ça bouge trop)
                 FIRE.lineX = playerPos.x;
                 FIRE.lineY = playerPos.y;
-
                 FIRE.state = "warning";
                 FIRE.t = 0;
                 FIRE.blinkStep = 0;
                 FIRE.visible = true;
                 FIRE.projectile = null;
             }
-            // ===== LIMITES DU TERRAIN (zone bleue) =====
+            
             function getPlayBounds() {
-                // limites basées sur ton graphe (terrain), pas sur l'écran
                 const b = getNodesBounds();
-                const pad = 80; // marge autour du graphe (augmente/diminue)
-
+                const pad = 80; 
                 return {
                     left: b.minX - pad,
                     right: b.maxX + pad,
@@ -810,11 +844,9 @@ canvas{
 
             function spawnProjectile() {
                 const b = getPlayBounds();
-
                 FIRE.lineX = clamp(FIRE.lineX, b.left, b.right);
                 FIRE.lineY = clamp(FIRE.lineY, b.top, b.bottom);
-
-                const off = 220; // distance hors terrain avant d'entrer
+                const off = 220; 
 
                 if (FIRE.axis === "h") {
                     const fromLeft = Math.random() < 0.5;
@@ -836,33 +868,25 @@ canvas{
             }
 
             function killPlayer(reason) {
-                loseTextDelay = 0.81; // 0.55s avant le texte
+                loseTextDelay = 0.81; 
                 gameOver = true;
-                gameOverMsg = "T'as perdu — " + reason;
+                gameOverMsg = reason + " STABILITÉ SYSTÈME : -10%";
 
-                // 🔥 déclenche explosion à la position du joueur
                 DEATHFX.on = true;
                 DEATHFX.t = 0;
                 DEATHFX.x = playerPos.x;
                 DEATHFX.y = playerPos.y;
 
-                screenShake = 18; // tremblement fort
-
-                // stop feu
+                screenShake = 18; 
                 FIRE.state = "idle";
                 FIRE.projectile = null;
-
-                // stop mouvement
                 isMoving = false;
             }
 
             function updateFire(dt) {
-
                 if (FIRE.state === "idle") return;
-
                 if (FIRE.state === "warning") {
                     FIRE.t += dt;
-
                     if (FIRE.blinkStep === 0) {
                         FIRE.visible = true;
                         if (FIRE.t >= WARN_ON) { FIRE.t = 0; FIRE.blinkStep = 1; }
@@ -878,21 +902,14 @@ canvas{
                     }
                     return;
                 }
-
-                // firing
                 const p = FIRE.projectile;
                 if (!p) { FIRE.state = "idle"; return; }
-
                 p.x += p.vx * dt;
                 p.y += p.vy * dt;
-
-                // collision joueur vs boule de feu
                 const d = Math.hypot(playerPos.x - p.x, playerPos.y - p.y);
                 if (d <= (PLAYER_RADIUS + FIRE_RADIUS)) {
                     killPlayer("Touché par le feu !");
                 }
-
-                // fin quand sort de l'écran
                 const b = getPlayBounds();
                 const out = 260;
                 if (p.x < b.left - out || p.x > b.right + out || p.y < b.top - out || p.y > b.bottom + out) {
@@ -901,13 +918,10 @@ canvas{
                 }
             }
 
-
             function drawWarningAt(x, y) {
                 ctx.save();
                 ctx.translate(x, y);
-
                 const s = WARNING_SCALE;
-
                 ctx.fillStyle = "#ffd400";
                 ctx.beginPath();
                 ctx.moveTo(0, -22 * s);
@@ -915,32 +929,26 @@ canvas{
                 ctx.lineTo(-22 * s, 18 * s);
                 ctx.closePath();
                 ctx.fill();
-
                 ctx.fillStyle = "#111";
                 ctx.font = `bold ${Math.round(22 * s)}px system-ui`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText("!", 0, 4 * s);
-
                 ctx.restore();
             }
             function drawBorderWarning() {
                 if (FIRE.state !== "warning" || !FIRE.visible) return;
-
                 const b = getPlayBounds();
-
                 ctx.save();
                 ctx.strokeStyle = "rgba(255,0,0,0.35)";
                 ctx.lineWidth = 8;
                 ctx.lineCap = "round";
-
                 if (FIRE.axis === "h") {
                     const y = FIRE.lineY;
                     ctx.beginPath();
                     ctx.moveTo(b.left, y);
                     ctx.lineTo(b.right, y);
                     ctx.stroke();
-
                     drawWarningAt(b.left, y);
                     drawWarningAt(b.right, y);
                 } else {
@@ -949,27 +957,20 @@ canvas{
                     ctx.moveTo(x, b.top);
                     ctx.lineTo(x, b.bottom);
                     ctx.stroke();
-
                     drawWarningAt(x, b.top);
                     drawWarningAt(x, b.bottom);
                 }
-
                 ctx.restore();
             }
             function drawFireballAura(x, y, vx, vy, baseR) {
                 const speed = Math.hypot(vx, vy);
                 if (speed < 0.01) return;
-
                 const nx = vx / speed;
                 const ny = vy / speed;
-
-                const stretch = Math.min(70, speed * 0.22); // longueur aura
+                const stretch = Math.min(70, speed * 0.22); 
                 const t = performance.now() * 0.006;
-
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-
-                // ===== AURA PRINCIPALE (directionnelle)
                 {
                     const g = ctx.createRadialGradient(
                         x - nx * stretch * 0.6,
@@ -979,11 +980,9 @@ canvas{
                         y - ny * stretch,
                         baseR + stretch
                     );
-
                     g.addColorStop(0.0, "rgba(180,245,255,0.45)");
                     g.addColorStop(0.4, "rgba(120,220,255,0.30)");
                     g.addColorStop(1.0, "rgba(0,160,255,0.00)");
-
                     ctx.fillStyle = g;
                     ctx.beginPath();
                     ctx.ellipse(
@@ -997,40 +996,29 @@ canvas{
                     );
                     ctx.fill();
                 }
-
-                // ===== PULSE CHALEUR
                 {
                     const pulse = Math.sin(t * 2.2) * 0.5 + 0.5;
                     const r = baseR + 10 + pulse * 6;
-
                     ctx.strokeStyle = `rgba(140,230,255,${0.18 + pulse * 0.18})`;
                     ctx.lineWidth = 10 + pulse * 8;
                     ctx.beginPath();
                     ctx.arc(x, y, r, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-
                 ctx.globalCompositeOperation = "source-over";
                 ctx.restore();
             }
             function drawFireball() {
                 if (FIRE.state !== "firing" || !FIRE.projectile) return;
-
                 const p = FIRE.projectile;
                 const x = p.x, y = p.y;
                 drawFireballAura(x, y, p.vx, p.vy, FIRE_RADIUS + 8);
-
-                // Taille visuelle (tu peux ajuster)
-                const R = FIRE_RADIUS;          // rayon "hitbox"
-                const outer = R + 26;           // halo externe
-                const inner = R + 6;            // bord lumineux
-
-                const t = performance.now() * 0.006; // animation
-
+                const R = FIRE_RADIUS;          
+                const outer = R + 26;           
+                const inner = R + 6;            
+                const t = performance.now() * 0.006; 
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-
-                // ===== HALO EXTERNE (bleu)
                 {
                     const g = ctx.createRadialGradient(x, y, 0, x, y, outer);
                     g.addColorStop(0.00, "rgba(220,255,255,0.55)");
@@ -1041,13 +1029,10 @@ canvas{
                     ctx.arc(x, y, outer, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
-                // ===== BORD DENTELÉ (comme ton image)
                 {
-                    const spikes = 64;        // + = bord plus "crénelé"
-                    const amp = 5.5;          // amplitude des dents
+                    const spikes = 64;        
+                    const amp = 5.5;          
                     ctx.fillStyle = "rgba(120,235,255,0.55)";
-
                     ctx.beginPath();
                     for (let i = 0; i <= spikes; i++) {
                         const a = (i / spikes) * Math.PI * 2;
@@ -1061,8 +1046,6 @@ canvas{
                     ctx.closePath();
                     ctx.fill();
                 }
-
-                // ===== DISQUE PRINCIPAL (bleu clair)
                 {
                     const g2 = ctx.createRadialGradient(x, y, 0, x, y, R + 10);
                     g2.addColorStop(0.00, "rgba(235,255,255,0.98)");
@@ -1073,35 +1056,32 @@ canvas{
                     ctx.arc(x, y, R + 10, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
-                // ===== CENTRE plus doux
                 {
                     ctx.fillStyle = "rgba(255,255,255,0.25)";
                     ctx.beginPath();
                     ctx.arc(x, y, R * 0.9, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
                 ctx.globalCompositeOperation = "source-over";
                 ctx.restore();
             }
 
-            // ====== ATTAQUE BOMBE (zone rouge -> explosion) ======***********************************************************************************
+            // ====== ATTAQUE BOMBE ======
             const BOMB = {
-                state: "idle",     // "idle" | "warning" | "exploding"
+                state: "idle",     
                 x: 0,
                 y: 0,
-                r: 260,            // rayon du cercle rouge (augmente/réduit)
+                r: 260,            
                 t: 0,
-                blinkStep: 0,      // 0 ON, 1 OFF, 2 ON
+                blinkStep: 0,      
                 visible: true,
-                affected: [],      // ids des cases touchées
-                explosionT: 0,     // timer explosion
+                affected: [],      
+                explosionT: 0,     
             };
 
             const BOMB_WARN_ON = 0.5;
             const BOMB_WARN_OFF = 0.5;
-            const EXPLOSION_DURATION = 0.6; // durée animation explosion
+            const EXPLOSION_DURATION = 0.6; 
 
             function pickRandomBombCenter() {
                 const n = nodes[Math.floor(Math.random() * nodes.length)];
@@ -1121,8 +1101,7 @@ canvas{
 
             function startBombAttack() {
                 if (gameOver || gameWon) return;
-                if (BOMB.state !== "idle") return;       // une bombe à la fois
-
+                if (BOMB.state !== "idle") return;       
 
                 const c = pickRandomBombCenter();
                 BOMB.x = c.x;
@@ -1138,10 +1117,8 @@ canvas{
 
             function updateBomb(dt) {
                 if (BOMB.state === "idle") return;
-
                 if (BOMB.state === "warning") {
                     BOMB.t += dt;
-
                     if (BOMB.blinkStep === 0) {
                         BOMB.visible = true;
                         if (BOMB.t >= BOMB_WARN_ON) { BOMB.t = 0; BOMB.blinkStep = 1; }
@@ -1151,11 +1128,8 @@ canvas{
                     } else {
                         BOMB.visible = true;
                         if (BOMB.t >= BOMB_WARN_ON) {
-                            // BOOM
                             BOMB.state = "exploding";
                             BOMB.explosionT = 0;
-
-                            // si joueur sur une case touchée -> perdu
                             if (BOMB.affected.includes(playerNodeId)) {
                                 killPlayer("Touché par la bombe !");
                             }
@@ -1163,8 +1137,6 @@ canvas{
                     }
                     return;
                 }
-
-                // explosion anim
                 if (BOMB.state === "exploding") {
                     BOMB.explosionT += dt;
                     if (BOMB.explosionT >= EXPLOSION_DURATION) {
@@ -1175,51 +1147,34 @@ canvas{
 
             function drawBombWarning() {
                 if (BOMB.state !== "warning" || !BOMB.visible) return;
-
-                // cercle rouge translucide
                 ctx.save();
                 ctx.fillStyle = "rgba(255, 0, 0, 0.18)";
                 ctx.beginPath();
                 ctx.arc(BOMB.x, BOMB.y, BOMB.r, 0, Math.PI * 2);
                 ctx.fill();
-
-                // contour
                 ctx.strokeStyle = "rgba(255, 0, 0, 0.45)";
                 ctx.lineWidth = 6;
                 ctx.beginPath();
                 ctx.arc(BOMB.x, BOMB.y, BOMB.r, 0, Math.PI * 2);
                 ctx.stroke();
-
-                // icône ! au centre (réutilise ton style)
                 drawWarningAt(BOMB.x, BOMB.y);
-
                 ctx.restore();
             }
 
             function drawBombExplosion() {
                 if (BOMB.state !== "exploding") return;
-
                 const t = Math.min(1, BOMB.explosionT / EXPLOSION_DURATION);
-
-                // expansion + fade
                 const R = BOMB.r * (0.6 + 0.6 * t);
-
                 ctx.save();
-
-                // flash central
                 ctx.fillStyle = `rgba(255,120,0,${0.25 * (1 - t)})`;
                 ctx.beginPath();
                 ctx.arc(BOMB.x, BOMB.y, R, 0, Math.PI * 2);
                 ctx.fill();
-
-                // ring
                 ctx.strokeStyle = `rgba(255,60,0,${0.55 * (1 - t)})`;
                 ctx.lineWidth = 10;
                 ctx.beginPath();
                 ctx.arc(BOMB.x, BOMB.y, R, 0, Math.PI * 2);
                 ctx.stroke();
-
-                // marque les cases touchées en rouge pendant l'explosion
                 for (const id of BOMB.affected) {
                     const n = getNode(id);
                     if (!n) continue;
@@ -1228,7 +1183,6 @@ canvas{
                     ctx.arc(n.x, n.y, NODE_RADIUS + 14, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
                 ctx.restore();
             }
 
@@ -1239,23 +1193,18 @@ canvas{
                 const dt = Math.min(0.033, (now - lastTime) / 1000);
                 lastTime = now;
 
-
-                // ===== BOMBE AUTO =====
                 bombTimer -= dt;
                 if (bombTimer <= 0) {
                     startBombAttack();
                     bombTimer = BOMB_INTERVAL;
                 }
 
-                // Timer attaque auto
                 nextFireIn -= dt;
                 if (nextFireIn <= 0) {
                     startRandomFireAttack();
-                    // Prochaine attaque aléatoire entre 1.8s et 3.5s
                     nextFireIn = 1.8 + Math.random() * 1.7;
                 }
 
-                // player move
                 if (isMoving) {
                     playerTrail.push({ x: playerPos.x, y: playerPos.y, life: 1 });
                     if (playerTrail.length > TRAIL_MAX) playerTrail.shift();
@@ -1268,134 +1217,119 @@ canvas{
                         playerPos.x = playerTarget.x;
                         playerPos.y = playerTarget.y;
                         isMoving = false;
-
-                        collectEnergyIfOnNode(); //l'energi collecter
+                        collectEnergyIfOnNode();
                     } else {
                         playerPos.x += (dx / dist) * step;
                         playerPos.y += (dy / dist) * step;
                     }
                 }
-                for (const p of playerTrail) p.life -= dt * 2.2;  // vitesse de disparition
+                for (const p of playerTrail) p.life -= dt * 2.2; 
                 playerTrail = playerTrail.filter(p => p.life > 0);
 
-                // fire attack
                 updateFire(dt);
                 updateBomb(dt);
                 updateKaiju(dt);
                 updateEnergyFX(dt);
-                // update explosion mort
+                
                 if (DEATHFX.on) {
                     DEATHFX.t += dt;
                     if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
                 }
 
-                // amortit le tremblement
-                screenShake *= Math.pow(0.001, dt); // decay smooth
+                screenShake *= Math.pow(0.001, dt);
 
-
-                // ✅ Les délais doivent diminuer
                 if (winTextDelay > 0) winTextDelay -= dt;
                 if (loseTextDelay > 0) loseTextDelay -= dt;
 
-                // ✅ timer victoire (sinon drawVictoryFX reste figé)
                 if (WINFX.on) {
                     WINFX.t += dt;
                     if (WINFX.t >= WINFX.dur) WINFX.on = false;
                 }
 
-                // ✅ STOP gameplay si fin de jeu (mais laisse les FX)
+                // ===== GESTION FIN DE JEU =====
                 if (gameOver || gameWon) {
-                    // timers / FX continuent
                     if (winTextDelay > 0) winTextDelay -= dt;
                     if (loseTextDelay > 0) loseTextDelay -= dt;
 
-                    if (WINFX.on) {
-                        WINFX.t += dt;
-                        if (WINFX.t >= WINFX.dur) WINFX.on = false;
-                    }
-
-                    if (DEATHFX.on) {
-                        DEATHFX.t += dt;
-                        if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false;
-                    }
+                    if (WINFX.on) { WINFX.t += dt; if (WINFX.t >= WINFX.dur) WINFX.on = false; }
+                    if (DEATHFX.on) { DEATHFX.t += dt; if (DEATHFX.t >= DEATHFX.dur) DEATHFX.on = false; }
 
                     screenShake *= Math.pow(0.001, dt);
                     updateEnergyFX(dt);
 
-                    return; // ⛔ empêche bomb/fire/kaiju/joueur de continuer
+                    // AFFICHER OVERLAY + UPDATE HP (Une seule fois)
+                    if (!hpUpdated && (winTextDelay <= 0 && loseTextDelay <= 0)) {
+                        hpUpdated = true;
+                        
+                        overlay.style.display = "flex"; // Affiche l'écran
+                        endButton.onclick = () => {
+                            // Redirection au clic
+                            window.location.href = "../../kaijupedia3.html";
+                        };
+
+                        if (gameOver) {
+                            endTitle.textContent = "ÉCHEC CRITIQUE";
+                            endTitle.style.color = "#ff4b4b";
+                            endMessage.textContent = gameOverMsg;
+                            updateGlobalHP(-10);
+                        } else {
+                            endTitle.textContent = "SUCCÈS";
+                            endTitle.style.color = "#4ff";
+                            endMessage.textContent = endMsg;
+                            updateGlobalHP(5);
+                        }
+                    }
+
+                    return; 
                 }
             }
 
-
             function drawPlayerFancy(x, y) {
                 ctx.save();
-
-                // ========= TRAIL / CHALEUR (capsules) =========
                 if (playerTrail.length >= 2) {
                     for (let i = 0; i < playerTrail.length - 1; i++) {
                         const a = playerTrail[i];
                         const b = playerTrail[i + 1];
-                        const t = a.life; // 1 -> 0
-
+                        const t = a.life; 
                         const dx = b.x - a.x;
                         const dy = b.y - a.y;
                         const ang = Math.atan2(dy, dx);
                         const dist = Math.hypot(dx, dy);
-
-                        // capsule = un rectangle arrondi avec rotation
                         ctx.save();
                         ctx.translate(a.x, a.y);
                         ctx.rotate(ang);
-
                         const w = Math.max(22, dist);
                         const h = 26;
-
-                        // glow
                         ctx.fillStyle = `rgba(180, 80, 255, ${0.38 * t})`;
                         roundRectFill(-w * 0.2, -h / 2, w, h, 999);
-
-                        // coeur clair
                         ctx.fillStyle = `rgba(200, 160, 255, ${0.10 * t})`;
                         roundRectFill(-w * 0.1, -h * 0.35, w * 0.75, h * 0.7, 999);
-
                         ctx.restore();
                     }
                 }
-
-                // ========= HALO EXTERNE =========
                 ctx.fillStyle = "rgba(160, 60, 255, 0.18)";
                 ctx.beginPath();
                 ctx.arc(x, y, 44, 0, Math.PI * 2);
                 ctx.fill();
-
-                // ========= BOULE =========
                 ctx.fillStyle = "#a03cff";
                 ctx.beginPath();
                 ctx.arc(x, y, 22, 0, Math.PI * 2);
                 ctx.fill();
-
-                // ========= ÉTOILE LUMINEUSE =========
                 drawStar(x, y, 10, 22, 12, "rgba(40,0,255,0.95)");
                 drawStar(x, y, 6, 16, 12, "rgba(255,255,255,0.35)");
-
-                // petit reflet
                 ctx.fillStyle = "rgba(255,255,255,0.55)";
                 ctx.beginPath();
                 ctx.arc(x - 6, y - 7, 5, 0, Math.PI * 2);
                 ctx.fill();
-
                 ctx.restore();
             }
 
-            // étoile
             function drawStar(cx, cy, innerR, outerR, spikes, color) {
                 ctx.save();
                 ctx.fillStyle = color;
                 ctx.beginPath();
-
                 let rot = -Math.PI / 2;
                 const step = Math.PI / spikes;
-
                 ctx.moveTo(cx, cy - outerR);
                 for (let i = 0; i < spikes; i++) {
                     ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
@@ -1408,7 +1342,6 @@ canvas{
                 ctx.restore();
             }
 
-            // rectangle arrondi simple
             function roundRectFill(x, y, w, h, r) {
                 const rr = Math.min(r, w / 2, h / 2);
                 ctx.beginPath();
@@ -1420,10 +1353,10 @@ canvas{
                 ctx.closePath();
                 ctx.fill();
             }
-            let energyFX = []; // effets visuels de ramassage
+            
+            let energyFX = []; 
 
             function spawnEnergyPop(x, y) {
-                // anneau + particules
                 energyFX.push({
                     x, y,
                     t: 0,
@@ -1443,10 +1376,8 @@ canvas{
 
             function drawEnergyFX() {
                 for (const fx of energyFX) {
-                    const p = fx.t / fx.duration;       // 0 -> 1
-                    const a = 1 - p;                    // fade out
-
-                    // anneau pop
+                    const p = fx.t / fx.duration;       
+                    const a = 1 - p;                    
                     ctx.save();
                     ctx.globalCompositeOperation = "lighter";
                     ctx.strokeStyle = `rgba(0,255,160,${0.9 * a})`;
@@ -1454,14 +1385,10 @@ canvas{
                     ctx.beginPath();
                     ctx.arc(fx.x, fx.y, 18 + p * 55, 0, Math.PI * 2);
                     ctx.stroke();
-
-                    // petit flash
                     ctx.fillStyle = `rgba(220,255,245,${0.20 * a})`;
                     ctx.beginPath();
                     ctx.arc(fx.x, fx.y, 22 + p * 35, 0, Math.PI * 2);
                     ctx.fill();
-
-                    // sparks
                     for (const s of fx.sparks) {
                         const sx = fx.x + s.vx * fx.t * 0.018;
                         const sy = fx.y + s.vy * fx.t * 0.018;
@@ -1470,32 +1397,23 @@ canvas{
                         ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
                         ctx.fill();
                     }
-
                     ctx.globalCompositeOperation = "source-over";
-
-                    // +1 flottant
                     ctx.fillStyle = `rgba(190,255,225,${0.95 * a})`;
                     ctx.font = "bold 18px system-ui";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText("+1", fx.x, fx.y - 30 - p * 22);
-
                     ctx.restore();
                 }
             }
+            
             function drawDeathExplosion() {
                 if (!DEATHFX.on) return;
-
                 const t = Math.min(1, DEATHFX.t / DEATHFX.dur);
                 const x = DEATHFX.x, y = DEATHFX.y;
-
-                // easing
                 const easeOut = 1 - Math.pow(1 - t, 3);
-
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-
-                // FLASH central
                 {
                     const R = 30 + easeOut * 220;
                     const g = ctx.createRadialGradient(x, y, 0, x, y, R);
@@ -1507,8 +1425,6 @@ canvas{
                     ctx.arc(x, y, R, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
-                // ONDE DE CHOC (anneau)
                 {
                     const R = 60 + easeOut * 300;
                     ctx.strokeStyle = `rgba(180,245,255,${0.55 * (1 - t)})`;
@@ -1517,8 +1433,6 @@ canvas{
                     ctx.arc(x, y, R, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-
-                // PARTICULES (explosion en étoiles)
                 {
                     const count = 26;
                     for (let i = 0; i < count; i++) {
@@ -1526,36 +1440,28 @@ canvas{
                         const sp = 120 + i * 6;
                         const px = x + Math.cos(a) * easeOut * sp;
                         const py = y + Math.sin(a) * easeOut * sp;
-
                         ctx.fillStyle = `rgba(200,255,255,${0.65 * (1 - t)})`;
                         ctx.beginPath();
                         ctx.arc(px, py, 6 * (1 - t) + 1.5, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
-
                 ctx.globalCompositeOperation = "source-over";
                 ctx.restore();
-
-                // petit voile sombre (impact)
                 ctx.save();
                 ctx.fillStyle = `rgba(0,0,0,${0.25 * t})`;
                 ctx.fillRect(-99999, -99999, 200000, 200000);
                 ctx.restore();
             }
+            
             function drawVictoryFX() {
                 if (!WINFX.on) return;
-
                 const t = Math.min(1, WINFX.t / WINFX.dur);
                 const x = WINFX.x, y = WINFX.y;
-
                 const easeOut = 1 - Math.pow(1 - t, 3);
                 const pulse = Math.sin(performance.now() * 0.02) * 0.5 + 0.5;
-
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-
-                // FLASH énorme vert
                 {
                     const R = 80 + easeOut * 560;
                     const g = ctx.createRadialGradient(x, y, 0, x, y, R);
@@ -1567,8 +1473,6 @@ canvas{
                     ctx.arc(x, y, R, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
-                // Onde de choc (anneau géant)
                 {
                     const R = 120 + easeOut * 720;
                     ctx.strokeStyle = `rgba(120,255,200,${0.55 * (1 - t)})`;
@@ -1577,8 +1481,6 @@ canvas{
                     ctx.arc(x, y, R, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-
-                // Particules étoiles
                 {
                     const count = 40;
                     for (let i = 0; i < count; i++) {
@@ -1586,15 +1488,12 @@ canvas{
                         const sp = 160 + i * 8;
                         const px = x + Math.cos(a) * easeOut * sp;
                         const py = y + Math.sin(a) * easeOut * sp;
-
                         ctx.fillStyle = `rgba(200,255,230,${0.75 * (1 - t)})`;
                         ctx.beginPath();
                         ctx.arc(px, py, 7 * (1 - t) + 2, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
-
-                // Pulse intérieur “énergie”
                 {
                     const R = 34 + pulse * 8;
                     ctx.strokeStyle = `rgba(255,255,255,${0.35 + pulse * 0.25})`;
@@ -1603,27 +1502,23 @@ canvas{
                     ctx.arc(x, y, R, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-
                 ctx.globalCompositeOperation = "source-over";
                 ctx.restore();
-
-                // léger voile clair (glow victory)
                 ctx.save();
                 ctx.fillStyle = `rgba(0,255,160,${0.10 * (1 - t)})`;
                 ctx.fillRect(-99999, -99999, 200000, 200000);
                 ctx.restore();
             }
+            
             // ====== Draw ======
             function draw() {
                 resizeCanvasToDisplaySize();
                 update();
-                // NE PAS remplir en blanc : le CSS du canvas fait le fond
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 const { ox, oy } = getCenterOffset();
                 ctx.save();
                 ctx.translate(ox, oy);
-                // tremblement caméra
                 if (screenShake > 0.2) {
                     const sx = (Math.random() * 2 - 1) * screenShake;
                     const sy = (Math.random() * 2 - 1) * screenShake;
@@ -1635,16 +1530,13 @@ canvas{
                     const a = getNode(aId);
                     const b = getNode(bId);
                     if (!a || !b) continue;
-
                     ctx.lineCap = "round";
-
                     ctx.strokeStyle = "rgba(0,0,0,0.55)";
                     ctx.lineWidth = EDGE_WIDTH + 4;
                     ctx.beginPath();
                     ctx.moveTo(a.x, a.y);
                     ctx.lineTo(b.x, b.y);
                     ctx.stroke();
-
                     ctx.strokeStyle = "rgba(140,140,140,0.45)";
                     ctx.lineWidth = EDGE_WIDTH;
                     ctx.beginPath();
@@ -1657,17 +1549,14 @@ canvas{
                 for (const n of nodes) {
                     const isHovered = n.id === hoveredId;
                     const isSelected = n.id === selectedId;
-
                     ctx.fillStyle = "rgba(0,0,0,0.6)";
                     ctx.beginPath();
                     ctx.arc(n.x, n.y, NODE_RADIUS + 4, 0, Math.PI * 2);
                     ctx.fill();
-
                     ctx.fillStyle = "rgba(90,90,90,0.85)";
                     ctx.beginPath();
                     ctx.arc(n.x, n.y, NODE_RADIUS, 0, Math.PI * 2);
                     ctx.fill();
-
                     if (isHovered || isSelected) {
                         ctx.strokeStyle = isSelected ? "#00d1ff" : "#ffd166";
                         ctx.lineWidth = 4;
@@ -1675,7 +1564,6 @@ canvas{
                         ctx.arc(n.x, n.y, NODE_RADIUS + 8, 0, Math.PI * 2);
                         ctx.stroke();
                     }
-
                     ctx.fillStyle = "rgba(0,0,0,0.55)";
                     ctx.font = "bold 16px system-ui";
                     ctx.textAlign = "center";
@@ -1687,14 +1575,10 @@ canvas{
                     if (ENERGY.nodeId === null) return;
                     const n = getNode(ENERGY.nodeId);
                     if (!n) return;
-
-                    // halo
                     ctx.fillStyle = "rgba(0,255,160,0.25)";
                     ctx.beginPath();
                     ctx.arc(n.x, n.y, NODE_RADIUS + 18, 0, Math.PI * 2);
                     ctx.fill();
-
-                    // module (petit losange)
                     ctx.fillStyle = "#00ff9a";
                     ctx.beginPath();
                     ctx.moveTo(n.x, n.y - 16);
@@ -1703,15 +1587,14 @@ canvas{
                     ctx.lineTo(n.x - 16, n.y);
                     ctx.closePath();
                     ctx.fill();
-
-                    // petit reflet
                     ctx.fillStyle = "rgba(255,255,255,0.6)";
                     ctx.beginPath();
                     ctx.arc(n.x - 6, n.y - 6, 4, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                drawBorderWarning(); // warning AU-DESSUS du terrain
-                drawFireball();      // boule AU-DESSUS
+                
+                drawBorderWarning(); 
+                drawFireball();      
                 drawBombWarning();
                 drawBombExplosion();
                 drawKaiju();
@@ -1721,65 +1604,17 @@ canvas{
                 drawDeathExplosion();
                 drawVictoryFX();
 
-                // texte édition
-                if (editMode) {
-                    ctx.fillStyle = "rgba(0,0,0,0.6)";
-                    ctx.font = "14px system-ui";
-                    ctx.textAlign = "left";
-                    ctx.fillText("Mode édition ON : drag pour bouger une case", 14, 24);
-                    ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 44);
-                } else {
-                    ctx.fillStyle = "rgba(0,0,0,0.55)";
-                    ctx.font = "14px system-ui";
-                    ctx.textAlign = "left";
-                    ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 24);
-                }
-
                 ctx.restore();
-                //jeu terminer
-                // ===== MESSAGE FIN (après délais) =====
-                if (gameOver && loseTextDelay <= 0) {
-                    ctx.fillStyle = "rgba(0,0,0,0.45)";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "bold 54px Cinzel, serif";
-                    ctx.textAlign = "center";
-
-                    ctx.fillText("T'AS PERDU", canvas.width / 2, canvas.height / 2 - 15);
-
-                    ctx.font = "18px Cinzel, serif";
-                    ctx.fillStyle = "rgba(255,255,255,0.9)";
-                    ctx.fillText(gameOverMsg, canvas.width / 2, canvas.height / 2 + 22);
-
-                }
-
-                if (gameWon && winTextDelay <= 0) {
-                    ctx.fillStyle = "rgba(0,0,0,0.35)";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "bold 58px Cinzel, serif";
-                    ctx.textAlign = "center";
-
-                    ctx.fillText("TU AS GAGNÉ !", canvas.width / 2, canvas.height / 2 - 10);
-
-                    ctx.font = "18px Cinzel, serif";
-                    ctx.fillStyle = "rgba(255,255,255,0.9)";
-                    ctx.fillText(endMsg, canvas.width / 2, canvas.height / 2 + 28);
-
-                }
+                
+                // Note: L'affichage de fin est maintenant géré par l'overlay HTML dans update()
                 requestAnimationFrame(draw);
             }
-            //feu aleratoire
+            
             function startRandomFireAttack() {
                 if (FIRE.state !== "idle" || gameOver || gameWon) return;
-
                 const axis = Math.random() < 0.5 ? "h" : "v";
                 FIRE.axis = axis;
-
                 const b = getPlayBounds();
-
                 if (axis === "h") {
                     FIRE.lineY = b.top + Math.random() * (b.bottom - b.top);
                     FIRE.lineX = playerPos.x;
@@ -1787,7 +1622,6 @@ canvas{
                     FIRE.lineX = b.left + Math.random() * (b.right - b.left);
                     FIRE.lineY = playerPos.y;
                 }
-
                 FIRE.state = "warning";
                 FIRE.t = 0;
                 FIRE.blinkStep = 0;
@@ -1800,15 +1634,12 @@ canvas{
                 const { x, y } = getMousePos(e);
                 hoveredId = hitNode(x, y);
                 if (uiHovered) uiHovered.textContent = hoveredId ?? "-";
-                //uiHovered.textContent = hoveredId ?? "-";
 
                 if (editMode && draggingId !== null) {
                     const n = getNode(draggingId);
                     if (n) {
                         n.x = x - dragOffset.x;
                         n.y = y - dragOffset.y;
-
-                        // si on déplace la case du joueur (et pas en mouvement)
                         if (n.id === playerNodeId && !isMoving) {
                             playerPos.x = n.x; playerPos.y = n.y;
                             playerTarget.x = n.x; playerTarget.y = n.y;
@@ -1820,7 +1651,6 @@ canvas{
             canvas.addEventListener("mousedown", (e) => {
                 const { x, y } = getMousePos(e);
                 const id = hitNode(x, y);
-
                 if (editMode) {
                     if (id !== null) {
                         draggingId = id;
@@ -1830,7 +1660,6 @@ canvas{
                     }
                     return;
                 }
-
                 if (id !== null) {
                     selectedId = id;
                     if (uiSelected) uiSelected.textContent = String(selectedId);
@@ -1852,13 +1681,7 @@ canvas{
 
             window.addEventListener("keydown", (e) => {
                 if (e.code === "KeyR") {
-                    gameOver = false;
-                    gameOverMsg = "";
-                    playerNodeId = 1;
-                    initPlayer();
-                    initKaijuSpawnSystem();
-                    BOMB.state = "idle";
-                    FIRE.state = "idle";
+                    resetPositions();
                 }
             });
 
@@ -1870,14 +1693,6 @@ canvas{
             spawnEnergyModule();
             draw();
         })();
-
-
-
-
-
     </script>
-
-
 </body>
-
 </html>
