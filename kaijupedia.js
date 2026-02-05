@@ -1,39 +1,158 @@
 window.addEventListener("DOMContentLoaded", () => {
+  // ============================================================
+  // PARTIE 1 : BOUTON QUI FUIT (Archive)
+  // ============================================================
   const btn = document.getElementById("archivesBtn");
-  const hero = document.querySelector(".hero"); // la section de déplacement
-  if (!btn || !hero) return;
+  const hero = document.querySelector(".hero");
 
-  let timer = null;
-  let hasMoved = false;
-  const PADDING = 12;
+  if (btn && hero) {
+    let timer = null;
+    let hasMoved = false;
+    const PADDING = 12;
 
-  btn.addEventListener("mouseenter", () => {
-    const delays = [40, 90, 140];
-    const delay = delays[Math.floor(Math.random() * delays.length)];
+    btn.addEventListener("mouseenter", () => {
+      const delays = [40, 90, 140];
+      const delay = delays[Math.floor(Math.random() * delays.length)];
 
-    timer = setTimeout(() => {
-      const hr = hero.getBoundingClientRect();
+      timer = setTimeout(() => {
+        const hr = hero.getBoundingClientRect();
+        const maxX = hr.width - btn.offsetWidth - PADDING * 2;
+        const maxY = hr.height - btn.offsetHeight - PADDING * 2;
 
-      // tailles dispo DANS la hero
-      const maxX = hr.width - btn.offsetWidth - PADDING * 2;
-      const maxY = hr.height - btn.offsetHeight - PADDING * 2;
+        if (maxX <= 0 || maxY <= 0) return;
 
-      if (maxX <= 0 || maxY <= 0) return;
+        const x = PADDING + Math.random() * maxX;
+        const y = PADDING + Math.random() * maxY;
 
-      const x = PADDING + Math.random() * maxX;
-      const y = PADDING + Math.random() * maxY;
+        if (!hasMoved) {
+          btn.style.bottom = "auto";
+          hasMoved = true;
+        }
 
-      // après le 1er move, on abandonne bottom
-      if (!hasMoved) {
-        btn.style.bottom = "auto";
-        hasMoved = true;
-      }
+        btn.style.left = x + "px";
+        btn.style.top = y + "px";
+        btn.style.transform = "none";
+      }, delay);
+    });
 
-      btn.style.left = x + "px";
-      btn.style.top = y + "px";
-      btn.style.transform = "none";
-    }, delay);
+    btn.addEventListener("mouseleave", () => clearTimeout(timer));
+  }
+
+  // ============================================================
+  // PARTIE 2 : LE SYSTÈME "LIFT" (Soulever l'image)
+  // ============================================================
+  const lift = document.getElementById("kaijuLift");
+  const cover = document.getElementById("kaijuCover");
+  const input = document.getElementById("kaijuWord");
+  const go = document.getElementById("kaijuGo");
+  const msg = document.getElementById("kaijuMsg");
+
+  // Si les éléments n'existent pas sur la page, on arrête ici pour éviter les erreurs
+  if (!lift || !cover || !input || !go || !msg) return;
+
+  let dragging = false;
+  let startY = 0;
+  let current = 0;
+  let unlocked = false;
+
+  // Calculer combien on peut soulever (environ 70% de la hauteur)
+  function maxLiftPx() {
+    return Math.floor(lift.offsetHeight * 0.75);
+  }
+
+  function setCover(y) {
+    current = y;
+    cover.style.transform = `translateY(${y}px)`;
+  }
+
+  function unlock() {
+    unlocked = true;
+    lift.classList.add("is-unlocked");
+    setCover(-maxLiftPx()); // On bloque l'image en haut
+    cover.style.cursor = "default";
+    input.focus(); // On met le curseur dans la case texte
+    msg.textContent = "";
+  }
+
+  function onDown(clientY) {
+    if (unlocked) return;
+    dragging = true;
+    // On calcule la position de la souris par rapport à l'image
+    startY = clientY - current;
+    cover.style.transition = "none"; // On enlève l'animation pour que ça suive la souris instantanément
+  }
+
+  function onMove(clientY) {
+    if (!dragging || unlocked) return;
+
+    const maxLift = maxLiftPx();
+    let y = clientY - startY;
+
+    // On limite le mouvement : pas plus bas que 0, pas plus haut que maxLift
+    y = Math.min(0, Math.max(-maxLift, y));
+    setCover(y);
+
+    // Si on a soulevé à plus de 60%, ça se débloque tout seul
+    const progress = Math.abs(y) / maxLift;
+    if (progress >= 0.60) unlock();
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    cover.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"; // Effet rebond
+
+    if (!unlocked) {
+      setCover(0); // Si on lâche trop tôt, ça redescend
+    }
+  }
+
+  // --- Événements Souris & Tactile ---
+  cover.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); // Empêche de sélectionner l'image
+    cover.setPointerCapture(e.pointerId);
+    onDown(e.clientY);
   });
 
-  btn.addEventListener("mouseleave", () => clearTimeout(timer));
+  cover.addEventListener("pointermove", (e) => {
+    if (dragging) e.preventDefault();
+    onMove(e.clientY);
+  });
+
+  cover.addEventListener("pointerup", onUp);
+  cover.addEventListener("pointercancel", onUp);
+
+  // --- Vérification du Mot de Passe ---
+  function tryWord() {
+    const v = input.value.trim().toLowerCase();
+
+    if (v === "kaiju") {
+      msg.style.color = "#4ff";
+      msg.textContent = "ACCÈS AUTORISÉ";
+      // Redirection vers ton jeu
+      setTimeout(() => {
+        window.location.href = "./mini-jeux/rituel/index.html";
+      }, 800);
+      return;
+    }
+
+    // Mot de passe faux
+    msg.style.color = "#f55";
+    msg.textContent = "REFUSÉ";
+    
+    // Petite animation de secousse
+    lift.animate([
+      { transform: "translateX(0)" },
+      { transform: "translateX(-5px)" },
+      { transform: "translateX(5px)" },
+      { transform: "translateX(0)" }
+    ], { duration: 300 });
+    
+    input.value = "";
+  }
+
+  go.addEventListener("click", tryWord);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") tryWord();
+  });
 });
