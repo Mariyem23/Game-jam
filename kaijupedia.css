@@ -680,12 +680,7 @@ body {
   width: min(920px, calc(100% - 24px));
   margin: 90px auto 40px;
   border-radius: calc(var(--radius) + 6px);
-  border: 1px solid rgba(200, 160, 110, 0.28);
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.82),
-    rgba(0, 0, 0, 0.92)
-  );
+
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -696,19 +691,13 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid rgba(200, 160, 110, 0.22);
-  background: linear-gradient(
-    to right,
-    rgba(140, 47, 31, 0.18),
-    rgba(0, 0, 0, 0.65)
-  );
+
 }
 
 .modal__kicker {
   font-family: var(--title);
   letter-spacing: 2px;
   font-size: 11px;
-  color: rgba(231, 220, 199, 0.72);
   text-transform: uppercase;
 }
 
@@ -750,7 +739,6 @@ body {
 .modal__footer {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid rgba(200, 160, 110, 0.18);
 }
 
 .modal__footnote {
@@ -763,8 +751,6 @@ body {
   position: relative; /* Important pour que les enfants absolute se calent dessus */
   width: 300px; /* Même taille que tes autres images */
   height: 300px;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
   background: #000; /* Fond noir derrière */
   overflow: hidden; /* Rien ne dépasse */
   user-select: none; /* On ne peut pas sélectionner le texte/image */
@@ -811,11 +797,9 @@ body {
   top: 10px;
   left: 10px;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 1px;
   text-transform: uppercase;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.5);
   padding: 2px 6px;
   border-radius: 4px;
 }
