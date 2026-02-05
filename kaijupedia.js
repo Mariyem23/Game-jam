@@ -188,4 +188,13 @@ window.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") tryWord();
     });
   }
+  const decryptLink = document.getElementById("decryptLink");
+
+if (decryptLink) {
+  decryptLink.addEventListener("click", () => {
+    // Redirection vers ton mini-jeu de decrypt
+    window.location.href = "http://127.0.0.1:5500/mini-jeux/jeu3/decrypt.html";
+  });
+}
+
 });
