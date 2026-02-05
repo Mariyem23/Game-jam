@@ -7,196 +7,209 @@
     <title>Kaiju — Terrain</title>
 
     <style>
-        :root {
-            --text: #eef0ff;
-            --muted: rgba(238, 240, 255, .72);
-            --stroke: rgba(255, 255, 255, .10);
-            --shadow: rgba(0, 0, 0, .55);
-            --panel: rgba(0, 0, 0, .40);
-            --panel2: rgba(255, 255, 255, .06);
+       :root{
+  --bg:#070707;
+  --ink:#e7dcc7;
+  --muted:rgba(231,220,199,.75);
+  --line:rgba(200,160,110,.28);
+  --accent:#8c2f1f;
+  --accent2:#b64a2a;
 
-            --green: #31d07a;
-        }
+  --shadow: 0 18px 60px rgba(0,0,0,.55);
+  --panelA: rgba(0,0,0,.55);
+  --panelB: rgba(0,0,0,.84);
 
-        * {
-            box-sizing: border-box;
-        }
+  --radius: 22px;
+  --btnRadius: 12px;
+}
 
-        html,
-        body {
-            height: 100%;
-        }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
 
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-            color: var(--text);
-            background: #000;
-            overflow: hidden;
-        }
+body{
+  background:
+    radial-gradient(1400px 700px at 50% -10%,
+      rgba(255, 190, 120, 0.45),
+      transparent 55%
+    ),
+    radial-gradient(1200px 900px at 50% 65%,
+      rgba(255, 140, 90, 0.30),
+      transparent 65%
+    ),
+    radial-gradient(800px 600px at 50% 100%,
+      rgba(255, 220, 170, 0.18),
+      transparent 70%
+    ),
+    #0a0a0a;
+}
 
-        /* Fond global noir + halo rouge au milieu */
-        body::before {
-            content: "";
-            position: fixed;
-            inset: -30vmax;
-            background:
-                radial-gradient(60vmax 40vmax at 50% 55%,
-                    rgba(140, 0, 0, .40) 0%,
-                    rgba(70, 0, 0, .22) 35%,
-                    rgba(0, 0, 0, 0) 70%),
-                radial-gradient(70vmax 70vmax at 50% 50%,
-                    rgba(0, 0, 0, 0) 55%,
-                    rgba(0, 0, 0, .50) 78%,
-                    rgba(0, 0, 0, .85) 100%);
-            pointer-events: none;
-            z-index: -2;
-        }
+/* ton app prend tout l’écran */
+.app{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  padding: 18px;
+  gap: 14px;
+}
 
-        /* Layout plein écran */
-        .app {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
+/* ===== HUD ===== */
+.hud{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+  padding: 18px 18px 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(200,160,110,.22);
+  background: linear-gradient(to bottom, var(--panelA), var(--panelB));
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow:hidden;
+}
 
-        /* Barre UI en haut */
-        .hud {
-            flex: 0 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 14px 16px;
-        }
+.hud::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(600px 260px at 20% 0%, rgba(182,74,42,.12), transparent 60%),
+    radial-gradient(700px 280px at 80% 30%, rgba(140,47,31,.10), transparent 65%);
+  pointer-events:none;
+}
 
-        .hud-left,
-        .hud-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+.hud-left,.hud-right{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap:wrap;
+  position:relative;
+  z-index:1;
+}
 
-        .pill {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: var(--panel);
-            border: 1px solid var(--stroke);
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, .06),
-                0 14px 40px var(--shadow);
-            color: var(--muted);
-            line-height: 1;
-            min-height: 42px;
-            backdrop-filter: blur(6px);
-        }
+/* tes “pills” deviennent des mini-panneaux */
+.pill{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(200,160,110,.20);
+  background: rgba(0,0,0,.32);
+  color: rgba(255,255,255,.86);
+  backdrop-filter: blur(6px);
+}
 
-        .objective {
-            min-width: min(560px, 68vw);
-            justify-content: flex-start;
-            font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
-            font-size: 22px;
-            color: rgba(255, 255, 255, .90);
-            letter-spacing: .2px;
-        }
+/* objectif = style titre */
+.objective{
+  font-family: "Cinzel", ui-serif, Georgia, serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: rgba(255,255,255,.82);
+  min-width: min(620px, 70vw);
+}
 
-        .energy {
-            padding-right: 16px;
-        }
+/* énergie */
+.gem{
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, rgba(180,90,60,.9), rgba(100,35,25,.9));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+  transform:none;
+}
 
-        .gem {
-            width: 18px;
-            height: 18px;
-            background: var(--green);
-            border-radius: 6px;
-            transform: rotate(45deg);
-            box-shadow: 0 0 0 4px rgba(49, 208, 122, .10);
-            flex: 0 0 auto;
-        }
+.energyStack{display:flex;flex-direction:column;gap:6px;min-width:140px}
+.energyNums{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  font-family: "Cinzel", ui-serif, Georgia, serif;
+  letter-spacing: 2px;
+  font-size: 11px;
+}
+.energyNums b{
+  font-size: 14px;
+  color: rgba(255,255,255,.92);
+}
 
-        .btn {
-            cursor: pointer;
-            border: 1px solid var(--stroke);
-            background: var(--panel);
-            color: var(--text);
-            padding: 10px 14px;
-            border-radius: 999px;
-            font-weight: 800;
-            letter-spacing: .2px;
-            min-height: 42px;
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, .06),
-                0 14px 40px var(--shadow);
-            backdrop-filter: blur(6px);
-        }
+.energyBar{
+  width: 160px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(200,160,110,.20);
+  background: rgba(0,0,0,.35);
+  overflow:hidden;
+}
+.energyFill{
+  height:100%;
+  width:0%;
+  background: linear-gradient(to right, rgba(182,74,42,.25), rgba(182,74,42,.95));
+  transition: width 180ms ease;
+}
 
-        .btn:hover {
-            background: rgba(0, 0, 0, .55);
-        }
+/* ===== BOUTONS ===== */
+.btn{
+  cursor:pointer;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--btnRadius);
+  font-family: "Cinzel", ui-serif, Georgia, serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: #5c291f;
+  color: #f1e6cf;
+  border: 1px solid rgba(138,111,76,.60);
+  box-shadow: 0 14px 40px rgba(0,0,0,.45);
+}
 
-        /* Zone jeu = tout le reste de la page */
-        .stage {
-            flex: 1 1 auto;
-            padding: 10px 16px 16px;
-            min-height: 0;
-            /* IMPORTANT pour éviter que ça déborde/coupe */
-        }
+.btn:hover{filter:brightness(1.06); transform: translateY(-1px)}
+.btn:active{transform: translateY(0); filter:brightness(.98)}
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            border-radius: 14px;
-            /* ton background rouge/noir */
-        }
+/* ===== STAGE / CANVAS ===== */
+.stage{
+  flex:1 1 auto;
+  min-height:0;
+  border-radius: var(--radius);
+  border: 1px solid rgba(220,180,120,.28);
+  background: rgba(10,10,10,.55);
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.55),
+    inset 0 0 120px rgba(180,90,60,.08);
+  overflow:hidden;
+  position:relative;
+}
 
-        @media (max-width: 720px) {
-            .objective {
-                font-size: 18px;
-                min-width: 0;
-            }
+.stage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(900px 420px at 50% 30%,
+      rgba(200,100,70,.25),
+      transparent 55%
+    ),
+    radial-gradient(900px 700px at 50% 90%,
+      rgba(0,0,0,0),
+      rgba(0,0,0,.35)
+    );
+  pointer-events:none;
+}
 
-            .pill,
-            .btn {
-                min-height: 40px;
-                padding: 9px 12px;
-            }
-        }
+canvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
 
-        .energyStack {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 120px;
-        }
-
-        .energyNums {
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-        }
-
-        .energyBar {
-            width: 140px;
-            height: 8px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.10);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.10);
-        }
-
-        .energyFill {
-            height: 100%;
-            width: 0%;
-            border-radius: 999px;
-            background: rgba(49, 208, 122, 0.95);
-            box-shadow: 0 0 14px rgba(49, 208, 122, 0.55);
-            transition: width 180ms ease;
-        }
+/* responsive */
+@media (max-width:720px){
+  body{overflow:hidden}
+  .app{padding:12px; gap:12px}
+  .objective{min-width:0}
+  .energyBar{width:140px}
+}
     </style>
 </head>
 
@@ -451,7 +464,7 @@
                         winTextDelay = 0.65;
                         screenShake = 10;
 
-                        endMsg = `Bravo 🎉 Tu as collecté ${ENERGY.collected} modules d'énergie !`;
+                        endMsg = `Bravo Tu as collecté ${ENERGY.collected} modules d'énergie !`;
                     } else {
                         // ✅ IMPORTANT : déplacer le module ailleurs
                         spawnEnergyModule();
@@ -824,7 +837,7 @@
             function killPlayer(reason) {
                 loseTextDelay = 0.81; // 0.55s avant le texte
                 gameOver = true;
-                gameOverMsg = "T'as perdu 😵 — " + reason;
+                gameOverMsg = "T'as perdu — " + reason;
 
                 // 🔥 déclenche explosion à la position du joueur
                 DEATHFX.on = true;
@@ -1729,16 +1742,15 @@
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                     ctx.fillStyle = "#fff";
-                    ctx.font = "bold 52px system-ui";
+                    ctx.font = "bold 54px Cinzel, serif";
                     ctx.textAlign = "center";
 
                     ctx.fillText("T'AS PERDU", canvas.width / 2, canvas.height / 2 - 15);
 
-                    ctx.font = "18px system-ui";
+                    ctx.font = "18px Cinzel, serif";
                     ctx.fillStyle = "rgba(255,255,255,0.9)";
                     ctx.fillText(gameOverMsg, canvas.width / 2, canvas.height / 2 + 22);
 
-                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 55);
                 }
 
                 if (gameWon && winTextDelay <= 0) {
@@ -1746,16 +1758,15 @@
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                     ctx.fillStyle = "#fff";
-                    ctx.font = "bold 56px system-ui";
+                    ctx.font = "bold 58px Cinzel, serif";
                     ctx.textAlign = "center";
 
                     ctx.fillText("TU AS GAGNÉ !", canvas.width / 2, canvas.height / 2 - 10);
 
-                    ctx.font = "18px system-ui";
+                    ctx.font = "18px Cinzel, serif";
                     ctx.fillStyle = "rgba(255,255,255,0.9)";
                     ctx.fillText(endMsg, canvas.width / 2, canvas.height / 2 + 28);
 
-                    ctx.fillText("Appuie sur R pour recommencer", canvas.width / 2, canvas.height / 2 + 60);
                 }
                 requestAnimationFrame(draw);
             }
