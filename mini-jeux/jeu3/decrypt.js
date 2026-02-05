@@ -1,7 +1,11 @@
 // ============================
-// PUZZLE: TEXTE + MOT-CLE
+// CONFIGURATION DU JEU
 // ============================
 const KEYWORD = "TEMPLE";
+
+// Liens de redirection
+const WIN_URL = "../../kaijupedia4.html";    // Page suivante
+const LOSE_URL = "../../kaijupedia3.html";   // Page précédente (retour)
 
 // Texte FR (stabilise: sans accents dans la traduction finale)
 const PLAINTEXT =
@@ -26,25 +30,23 @@ SI TU REFUSES, IL VIENDRA QUAND MEME.`;
 // ============================
 const STABLE_TIME_SEC = 600; // 10:00
 let timeLeft = STABLE_TIME_SEC;
-
 let gameOver = false;
+let timerInterval = null;
 
 // ============================
 // DOM
 // ============================
 const el = {
-  cipher: document.getElementById("cipherText"),
-  plain: document.getElementById("plainText"),
+  cipher: document.getElementById("cipherText"), // Si tu as cet ID dans le HTML
+  plain: document.getElementById("plainText"),   // La zone de traduction
   grid: document.getElementById("mapGrid"),
   status: document.getElementById("statusLine"),
   guessInput: document.getElementById("guessInput"),
   guessBtn: document.getElementById("guessBtn"),
-  corruptFill: document.getElementById("corruptFill"),
   glitch: document.getElementById("glitchLayer"),
-  timer: document.getElementById("timer"),
-  panel: document.getElementById("panel"),
-  phaseTag: document.getElementById("phaseTag"),
   abandonBtn: document.getElementById("abandonBtn"),
+  // Si tu as un timer affiché quelque part (optionnel)
+  timerDisplay: document.getElementById("timerDisplay") 
 };
 
 // ============================
@@ -66,8 +68,27 @@ for (const [letter, glyph] of Object.entries(GLYPH_FOR)) {
 // ============================
 // ETAT JOUEUR
 // ============================
-const current = new Map(); // glyph -> lettre saisie (meme si fausse)
-const locked = new Set();  // glyphes verrouilles (seulement si correct)
+const current = new Map(); // glyph -> lettre saisie
+const locked = new Set();  // glyphes verrouilles
+
+// ============================
+// GESTION BARRE DE VIE (HP) - NOUVEAU
+// ============================
+function updateGlobalHP(amount) {
+  // 1. Récupérer la valeur actuelle
+  let currentHP = parseInt(localStorage.getItem("kaijuHP") || "50");
+
+  // 2. Appliquer le changement
+  currentHP += amount;
+
+  // 3. Bornes (0 à 100)
+  currentHP = Math.min(100, Math.max(0, currentHP));
+
+  // 4. Sauvegarder
+  localStorage.setItem("kaijuHP", currentHP);
+  
+  console.log(`HP mis à jour : ${amount > 0 ? '+' : ''}${amount}% (Total: ${currentHP}%)`);
+}
 
 // ============================
 // ENCODAGE
@@ -100,9 +121,10 @@ function shuffle(arr){
 }
 
 // ============================
-// UI: TABLE DES SYMBOLES (MELANGEE)
+// UI: TABLE DES SYMBOLES
 // ============================
 function buildGrid(){
+  if(!el.grid) return;
   el.grid.innerHTML = "";
   const order = shuffle(USED_GLYPHS);
 
@@ -119,7 +141,6 @@ function buildGrid(){
     input.maxLength = 1;
     input.autocomplete = "off";
     input.spellcheck = false;
-    input.inputMode = "text";
 
     const mark = document.createElement("div");
     mark.className = "lockmark";
@@ -137,7 +158,6 @@ function buildGrid(){
         input.classList.remove("bad");
         renderPlain();
         updateItemState(item, g);
-        updateStatus();
         return;
       }
 
@@ -147,7 +167,6 @@ function buildGrid(){
         current.set(g, v);
         renderPlain();
         updateItemState(item, g);
-        updateStatus();
         return;
       }
 
@@ -183,7 +202,7 @@ function updateItemState(item, glyph){
     inp.classList.remove("bad");
     inp.value = LETTER_FOR_GLYPH.get(glyph);
     inp.style.pointerEvents = "none";
-    if (mark) mark.textContent = "VERROUILLE ✓";
+    if (mark) mark.textContent = "✓";
     return;
   }
 
@@ -199,13 +218,13 @@ function updateItemState(item, glyph){
     return;
   }
 
-  // si faux => rouge, modifiable
+  // si faux => rouge
   if (v !== correct) {
     inp.classList.add("bad");
     if (mark) mark.textContent = "";
   } else {
     inp.classList.remove("bad");
-    if (mark) mark.textContent = "VERROUILLE ✓";
+    if (mark) mark.textContent = "✓";
   }
 }
 
@@ -213,6 +232,8 @@ function updateItemState(item, glyph){
 // TRADUCTION LIVE
 // ============================
 function renderPlain(){
+  if(!el.plain) return;
+  
   let out = "";
   for (const ch of CIPHERTEXT){
     if (glyphValues.includes(ch)){
@@ -222,74 +243,36 @@ function renderPlain(){
       out += ch;
     }
   }
-
-  const complete = isFullyTranslated();
-  el.plain.innerHTML = complete
-    ? `<span class="hot">${escapeHtml(out)}</span>`
-    : `<span class="unk">${escapeHtml(out)}</span>`;
-}
-
-function isFullyTranslated(){
-  for (const g of USED_GLYPHS){
-    if (!locked.has(g)) return false;
-  }
-  return true;
-}
-
-function escapeHtml(s){
-  return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  
+  el.plain.textContent = out;
 }
 
 // ============================
-// TIMER: 10:00 -> REDIRECT
+// TIMER & FINS DE JEU
 // ============================
-function formatTime(s){
-  const m = Math.floor(s/60);
-  const r = s % 60;
-  return `${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}`;
-}
-
-function endAndRedirect(reason){
-  if (gameOver) return;
-  gameOver = true;
-
-  el.phaseTag.textContent = "FIN";
-  el.status.textContent = reason || "Fin.";
-  el.status.style.color = "rgba(255,140,140,0.95)";
-
-  // petit glitch visuel OK, mais pas de popups
-  el.glitch.style.opacity = "0.35";
-
-  setTimeout(() => {
-    window.location.href = "http://127.0.0.1:5500/kaijupedia2.html";
-  }, 700);
-}
-
 function startTimer(){
-  el.timer.textContent = formatTime(timeLeft);
-
-  setInterval(() => {
+  if (timerInterval) clearInterval(timerInterval);
+  
+  timerInterval = setInterval(() => {
     if (gameOver) return;
 
     timeLeft = Math.max(0, timeLeft - 1);
-    el.timer.textContent = formatTime(timeLeft);
+    
+    // Si tu as un élément pour afficher le temps
+    if(el.timerDisplay) {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        el.timerDisplay.innerText = `${m}:${s}`;
+    }
 
     if (timeLeft <= 0){
-      endAndRedirect("Temps écoulé… retour aux archives.");
+      endGame("lose", "Temps écoulé… retour aux archives.");
     }
   }, 1000);
 }
 
-// ============================
-// MOT-CLE
-// (fix: accepte aussi si l'utilisateur tape avec espaces)
-// + victoire => redirect kaijupedia
-// ============================
 function normalizeGuess(s){
-  return (s || "")
-    .toUpperCase()
-    .trim()
-    .replace(/\s+/g, ""); // enlève espaces
+  return (s || "").toUpperCase().trim().replace(/\s+/g, "");
 }
 
 function checkKeyword(){
@@ -298,87 +281,90 @@ function checkKeyword(){
   const guess = normalizeGuess(el.guessInput.value);
   const target = normalizeGuess(KEYWORD);
 
-  // Ici: tu veux que TEMPLE marche vraiment => on valide le mot-cle
-  // même si la traduction n'est pas 100% finie (sinon ça frustre).
+  // VICTOIRE
   if (guess === target){
-    el.status.textContent = "Protocole valide ✔ Retour aux archives…";
-    el.status.style.color = "rgba(160,255,190,0.95)";
-
-    el.glitch.style.opacity = "0";
-    setTimeout(() => {
-      window.location.href = "kaijupedia.html";
-    }, 700);
+    endGame("win", "Protocole valide ✔ Accès autorisé.");
     return;
   }
 
+  // Erreur
   el.status.textContent = "Mot-cle incorrect.";
   el.status.style.color = "rgba(255,140,140,0.95)";
+  el.guessInput.classList.add("error");
+  setTimeout(() => el.guessInput.classList.remove("error"), 500);
 }
 
-el.guessBtn.addEventListener("click", checkKeyword);
-el.guessInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") checkKeyword();
-});
-
 // ============================
-// ABANDONNER (-15% progression)
+// FONCTION CENTRALE DE FIN
 // ============================
-function applyProgressPenalty(percent){
-  const p = Number(percent) || 0;
+function endGame(type, message) {
+    gameOver = true;
+    clearInterval(timerInterval);
+    
+    el.status.textContent = message;
 
-  // On supporte plusieurs clés au cas où tu changes plus tard
-  const keys = ["kaiju_progress", "kaijuProgress", "progress"];
-  let foundKey = null;
-  let value = null;
+    if (type === "win") {
+        // GAGNE : +5% -> Page 4
+        updateGlobalHP(5);
+        el.status.style.color = "rgba(160,255,190,0.95)";
+        if(el.glitch) el.glitch.style.opacity = "0";
+        
+        setTimeout(() => {
+            window.location.href = WIN_URL;
+        }, 1500);
 
-  for (const k of keys){
-    const raw = localStorage.getItem(k);
-    if (raw !== null && raw !== "" && !Number.isNaN(Number(raw))){
-      foundKey = k;
-      value = Number(raw);
-      break;
+    } else if (type === "lose") {
+        // PERDU (Temps) : -10% -> Page 3
+        updateGlobalHP(-10);
+        el.status.style.color = "rgba(255,140,140,0.95)";
+        if(el.glitch) el.glitch.style.opacity = "0.5";
+
+        setTimeout(() => {
+             window.location.href = LOSE_URL;
+        }, 1500);
+
+    } else if (type === "abandon") {
+        // ABANDON : -15% -> Page 3
+        updateGlobalHP(-15);
+        window.location.href = LOSE_URL;
     }
-  }
-
-  // si rien n'existe, on part de 100 (ou 0 si tu préfères)
-  if (value === null) {
-    foundKey = "kaiju_progress";
-    value = 100;
-  }
-
-  const next = Math.max(0, value - p);
-  localStorage.setItem(foundKey, String(next));
-
-  // trace optionnelle
-  localStorage.setItem("kaiju_lastPenalty", String(p));
 }
 
-if (el.abandonBtn){
+
+// ============================
+// EVENTS
+// ============================
+if(el.guessBtn) el.guessBtn.addEventListener("click", checkKeyword);
+if(el.guessInput) {
+    el.guessInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") checkKeyword();
+    });
+}
+
+if(el.abandonBtn){
   el.abandonBtn.addEventListener("click", () => {
-    applyProgressPenalty(15);
-    window.location.href = "http://127.0.0.1:5500/kaijupedia3.html";
+    if(confirm("Abandonner ? Stabilité -15%.")) {
+        endGame("abandon", "Abandon du protocole.");
+    }
   });
 }
 
-// ============================
-// STATUS
-// ============================
 function updateStatus(){
   if (gameOver) return;
-
   const total = USED_GLYPHS.length;
   let ok = 0;
   for (const g of USED_GLYPHS) if (locked.has(g)) ok++;
-
-  el.status.textContent = `Stabilité OK. Traduction: ${ok}/${total} symboles corrects. Mot-cle attendu: ${KEYWORD}`;
-  el.status.style.color = "rgba(231,220,199,0.82)";
+  el.status.textContent = `Traduction: ${ok}/${total} symboles.`;
 }
 
 // ============================
 // INIT
 // ============================
-el.cipher.textContent = CIPHERTEXT;
+// Affichage initial du texte codé si nécessaire, ou juste setup
+if(el.cipher) el.cipher.textContent = CIPHERTEXT;
+
 buildGrid();
 renderPlain();
 updateStatus();
 startTimer();
+console.log("Système de décryptage prêt.");
