@@ -301,3 +301,69 @@ window.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter" || e.key === " ") possessAndGuide();
   });
 })();
+
+(() => {
+  const display = document.getElementById("heroTitleDisplay");
+  const input = document.getElementById("heroTitleInput");
+  if (!display || !input) return;
+
+  const WRONG = "KAJIUPEDIA";
+  const RIGHT = "KAIJUPEDIA";
+
+  // état initial : mal écrit
+  display.textContent = WRONG;
+
+  const normalize = (s) => (s || "").trim().toUpperCase();
+
+  function openEdit() {
+    display.style.display = "none";
+    input.style.display = "inline-block";
+    input.classList.remove("is-bad");
+    input.value = "";
+    input.focus();
+  }
+
+  function closeEdit() {
+    input.style.display = "none";
+    display.style.display = "inline";
+  }
+
+  function validate() {
+    const v = normalize(input.value);
+
+    if (v === RIGHT) {
+      display.textContent = RIGHT;
+      closeEdit();
+
+      // ✅ ICI tu peux déclencher un truc (optionnel) :
+      // window.location.href = "mini_jeu2.html";
+      // ou jouer un son / ajouter une classe / etc.
+      display.classList.add("is-fixed");
+      window.location.href = "./mini-jeux/jeu56.html";
+
+    } else {
+      input.classList.add("is-bad");
+      input.select();
+    }
+  }
+
+  // Click / clavier sur le titre
+  display.addEventListener("click", openEdit);
+  display.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") openEdit();
+  });
+
+  // Validation dans l’input
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") validate();
+    if (e.key === "Escape") closeEdit();
+  });
+
+  // Si on clique ailleurs : fermer
+  document.addEventListener("click", (e) => {
+    const editing = input.style.display === "inline-block";
+    if (!editing) return;
+    if (e.target === input || e.target === display) return;
+    closeEdit();
+  });
+})();
