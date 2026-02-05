@@ -153,7 +153,7 @@ window.addEventListener("DOMContentLoaded", () => {
         msg.style.color = "#4ff";
         msg.textContent = "ACCÈS AUTORISÉ";
         setTimeout(() => {
-          window.location.href = "./mini-jeux/jeu1/rituel.html";
+          window.location.href = "./mini-jeux/jeu4/index.html";
         }, 800);
         return;
       }
