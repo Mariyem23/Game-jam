@@ -139,19 +139,20 @@
         }
 
         /* Zone jeu = tout le reste de la page */
-        .stage{
-  flex: 1 1 auto;
-  padding: 10px 16px 16px;
-  min-height: 0; /* IMPORTANT pour éviter que ça déborde/coupe */
-}
+        .stage {
+            flex: 1 1 auto;
+            padding: 10px 16px 16px;
+            min-height: 0;
+            /* IMPORTANT pour éviter que ça déborde/coupe */
+        }
 
-        canvas{
-  width:100%;
-  height:100%;
-  display:block;
-  border-radius:14px;
-  /* ton background rouge/noir */
-}
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 14px;
+            /* ton background rouge/noir */
+        }
 
         @media (max-width: 720px) {
             .objective {
@@ -165,6 +166,36 @@
                 padding: 9px 12px;
             }
         }
+        .energyStack{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:120px;
+}
+
+.energyNums{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+
+.energyBar{
+  width:140px;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.10);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,0.10);
+}
+
+.energyFill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  background:rgba(49,208,122,0.95);
+  box-shadow: 0 0 14px rgba(49,208,122,0.55);
+  transition: width 180ms ease;
+}
     </style>
 </head>
 
@@ -175,14 +206,21 @@
         <div class="hud">
             <div class="hud-left">
                 <div class="pill objective">
-                    Objectif : récupérer les 12 modules d’énergie.
+                    Objectif : récupérer les 15 modules d’énergie.
                 </div>
             </div>
 
             <div class="hud-right">
-                <div class="pill energy">
+                <div class="pill energy" id="energyPill">
                     <span class="gem" aria-hidden="true"></span>
-                    <span><b id="energy">0</b><span style="opacity:.65;">/12</span></span>
+
+                    <div class="energyStack">
+                        <div class="energyNums"><b id="energy">0</b><span style="opacity:.65;"></span></div>
+
+                        <div class="energyBar" aria-hidden="true">
+                            <div class="energyFill" id="energyFill"></div>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn" id="toggleEdit">Mode édition: OFF</button>
                 <button class="btn" id="reset">Reset positions</button>
@@ -202,6 +240,8 @@
         (() => {
             const canvas = document.getElementById("game");
             const ctx = canvas.getContext("2d");
+            const kaijuImg = new Image();
+            kaijuImg.src = "image/tete_de_kaijo.png";
             function resizeCanvasToDisplaySize() {
                 const r = canvas.getBoundingClientRect();
                 const dpr = window.devicePixelRatio || 1;
@@ -227,17 +267,22 @@
             let gameOverMsg = "";
 
             const energyUI = document.getElementById("energy");
+            function updateEnergyUI() {
+                energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
+                const p = Math.max(0, Math.min(1, ENERGY.collected / ENERGY.goal));
+                if (energyFill) energyFill.style.width = `${p * 100}%`;
+            }
 
             const ENERGY = {
                 collected: 0,
-                goal: 12,
+                goal: 15,
                 nodeId: null,   // case où se trouve le module
             };
 
             let nextFireIn = 2.0; // première attaque après 2 sec
 
-            let bombTimer = 10.0;     // première bombe après 15s
-            const BOMB_INTERVAL = 3.0; // ensuite toutes les 5s
+            let bombTimer = 10.0;     // première bombe après 10s
+            const BOMB_INTERVAL = 3.0; // ensuite toutes les 3s
             // ====== TERRAIN ======
             const initialNodes = [
                 { id: 0, x: 220, y: 520 },
@@ -366,6 +411,9 @@
 
                 if (playerNodeId === ENERGY.nodeId) {
                     ENERGY.collected++;
+                    const n = getNode(ENERGY.nodeId);
+if (n) spawnEnergyPop(n.x, n.y);
+updateEnergyUI();
                     energyUI.textContent = `${ENERGY.collected}/${ENERGY.goal}`;
 
                     if (ENERGY.collected >= ENERGY.goal) {
@@ -382,6 +430,8 @@
             let playerPos = { x: 0, y: 0 };
             let playerTarget = { x: 0, y: 0 };
             let isMoving = false;
+            let playerTrail = []; // traînée (positions)
+            const TRAIL_MAX = 14;
 
             const PLAYER_SPEED = 520; // px/s
 
@@ -419,7 +469,7 @@
 
                 // timers
                 spawnIn: 25.0,      // 1ère apparition après 30s
-                nextInterval: 15.0, // ensuite toutes les 15s
+                nextInterval: 10.0, // ensuite toutes les 15s
                 activeLeft: 0,      // temps restant en chase
 
                 // warning blink
@@ -427,11 +477,12 @@
                 wStep: 0,           // 0 ON, 1 OFF, 2 ON
                 wVisible: true,
             };
-
+            let kaijuTrail = [];
+            const KTRAIL_MAX = 18; // + grand = plus long
             const KAIJU_WARN_ON = 0.5;
             const KAIJU_WARN_OFF = 0.5;
-            const KAIJU_ACTIVE_DURATION = 7.0;         // chase 7s
-            const KAIJU_SPEED = PLAYER_SPEED * 0.5;   // presque pareil que joueur 
+            const KAIJU_ACTIVE_DURATION = 8.0;         // chase 8s
+            const KAIJU_SPEED = PLAYER_SPEED * 0.7;   // presque pareil que joueur 
             let kaijuStepTimer = 0.0;                  // tempo décision de pas
 
             function initKaijuSpawnSystem() {
@@ -558,6 +609,9 @@
 
                     // animation déplacement kaiju
                     if (KAIJU.moving) {
+                        // Trail (chaleur) pendant le mouvement
+                        kaijuTrail.push({ x: KAIJU.pos.x, y: KAIJU.pos.y, life: 1 });
+                        if (kaijuTrail.length > KTRAIL_MAX) kaijuTrail.shift();
                         const dx = KAIJU.target.x - KAIJU.pos.x;
                         const dy = KAIJU.target.y - KAIJU.pos.y;
                         const dist = Math.hypot(dx, dy);
@@ -576,40 +630,82 @@
                             KAIJU.pos.x += (dx / dist) * step;
                             KAIJU.pos.y += (dy / dist) * step;
                         }
+                        // Fade de la trail (plus lente = plus visible)
+                        for (const p of kaijuTrail) p.life -= dt * 1.1;
+                        kaijuTrail = kaijuTrail.filter(p => p.life > 0);
                     }
                 }
             }
 
             function drawKaiju() {
-                // WARNING: juste un gros halo sur la case 10
-                if (KAIJU.state === "warning" && KAIJU.wVisible) {
-                    const n = getNode(10);
+                if (KAIJU.state === "idle") return;
+
+                const x = KAIJU.pos.x;
+                const y = KAIJU.pos.y;
+
+                ctx.save();
+
+                // ===== TRAIL BLEUE (forte + contrastée) =====
+                if (kaijuTrail.length >= 2) {
                     ctx.save();
-                    ctx.fillStyle = "rgba(160, 60, 255, 0.18)";
-                    ctx.beginPath();
-                    ctx.arc(n.x, n.y, NODE_RADIUS + 40, 0, Math.PI * 2);
-                    ctx.fill();
-                    // petit warning au centre
-                    drawWarningAt(n.x, n.y);
+                    ctx.globalCompositeOperation = "lighter";
+
+                    for (let i = 0; i < kaijuTrail.length - 1; i++) {
+                        const a = kaijuTrail[i];
+                        const b = kaijuTrail[i + 1];
+                        const t = a.life; // 1 -> 0
+
+                        const dx = b.x - a.x;
+                        const dy = b.y - a.y;
+                        const ang = Math.atan2(dy, dx);
+                        const dist = Math.hypot(dx, dy);
+
+                        ctx.save();
+                        ctx.translate(a.x, a.y);
+                        ctx.rotate(ang);
+
+                        const w = Math.max(30, dist * 1.2);
+                        const h = 34;
+
+                        // couche externe (bleu intense)
+                        ctx.fillStyle = `rgba(0, 170, 255, ${0.55 * t})`;
+                        roundRectFill(-w * 0.25, -h / 2, w, h, 999);
+
+                        // coeur (presque blanc)
+                        ctx.fillStyle = `rgba(220, 250, 255, ${0.22 * t})`;
+                        roundRectFill(-w * 0.12, -h * 0.32, w * 0.78, h * 0.64, 999);
+
+                        ctx.restore();
+                    }
+
+                    ctx.globalCompositeOperation = "source-over";
                     ctx.restore();
-                    return;
                 }
 
-                // ACTIVE: boule violette
-                if (KAIJU.state === "active") {
-                    const x = KAIJU.pos.x, y = KAIJU.pos.y;
-                    ctx.save();
-                    ctx.fillStyle = "rgba(160, 60, 255, 0.25)";
-                    ctx.beginPath();
-                    ctx.arc(x, y, 46, 0, Math.PI * 2);
-                    ctx.fill();
+                // ===== HALO BLEU AUTOUR (plus fort si bouge) =====
+                const heat = KAIJU.moving ? 1.2 : 0.7;
 
-                    ctx.fillStyle = "#a03cff";
-                    ctx.beginPath();
-                    ctx.arc(x, y, 24, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                ctx.fillStyle = `rgba(0, 170, 255, ${0.22 * heat})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 60 * heat, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = `rgba(0, 120, 255, ${0.16 * heat})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 42 * heat, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.restore();
+
+                // ===== IMAGE KAIJU =====
+                const size = 120;
+                ctx.drawImage(kaijuImg, x - size / 2, y - size / 2, size, size);
+
+                ctx.restore();
             }
 
             // ====== ATTAQUE FEU (bordure -> ligne -> projectile) ======*******************************************************************************
@@ -628,9 +724,9 @@
             const WARN_ON = 0.5;
             const WARN_OFF = 0.5;
             const FIRE_SPEED = PLAYER_SPEED * 1.6;  // ~ vitesse joueur
-            const FIRE_RADIUS = 28;           // 🔥 plus gros (augmente si tu veux)
+            const FIRE_RADIUS = 40;           // 🔥 plus gros (augmente si tu veux)
             const PLAYER_RADIUS = 18;
-            const WARNING_SCALE = 1.4;              // ⚠️ icône plus grande
+            const WARNING_SCALE = 2.4;              // ⚠️ icône plus grande
             function startFireAttack(axis) {
 
 
@@ -785,24 +881,72 @@
                 if (FIRE.state !== "firing" || !FIRE.projectile) return;
 
                 const p = FIRE.projectile;
+                const x = p.x, y = p.y;
 
-                // halo
-                ctx.fillStyle = "rgba(255, 60, 0, 0.25)";
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, FIRE_RADIUS + 14, 0, Math.PI * 2);
-                ctx.fill();
+                // Taille visuelle (tu peux ajuster)
+                const R = FIRE_RADIUS;          // rayon "hitbox"
+                const outer = R + 26;           // halo externe
+                const inner = R + 6;            // bord lumineux
 
-                // boule (plus grosse)
-                ctx.fillStyle = "#ff3c00";
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, FIRE_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
+                const t = performance.now() * 0.006; // animation
 
-                // centre clair
-                ctx.fillStyle = "rgba(255,255,255,0.55)";
-                ctx.beginPath();
-                ctx.arc(p.x - 6, p.y - 6, Math.max(4, FIRE_RADIUS * 0.35), 0, Math.PI * 2);
-                ctx.fill();
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                // ===== HALO EXTERNE (bleu)
+                {
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, outer);
+                    g.addColorStop(0.00, "rgba(220,255,255,0.55)");
+                    g.addColorStop(0.35, "rgba(120,235,255,0.35)");
+                    g.addColorStop(1.00, "rgba(0,180,255,0.00)");
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, outer, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // ===== BORD DENTELÉ (comme ton image)
+                {
+                    const spikes = 64;        // + = bord plus "crénelé"
+                    const amp = 5.5;          // amplitude des dents
+                    ctx.fillStyle = "rgba(120,235,255,0.55)";
+
+                    ctx.beginPath();
+                    for (let i = 0; i <= spikes; i++) {
+                        const a = (i / spikes) * Math.PI * 2;
+                        const wobble = Math.sin(a * 18 + t) * amp + Math.sin(a * 7 - t * 1.2) * (amp * 0.45);
+                        const rr = inner + wobble;
+                        const px = x + Math.cos(a) * rr;
+                        const py = y + Math.sin(a) * rr;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // ===== DISQUE PRINCIPAL (bleu clair)
+                {
+                    const g2 = ctx.createRadialGradient(x, y, 0, x, y, R + 10);
+                    g2.addColorStop(0.00, "rgba(235,255,255,0.98)");
+                    g2.addColorStop(0.55, "rgba(170,245,255,0.92)");
+                    g2.addColorStop(1.00, "rgba(80,220,255,0.85)");
+                    ctx.fillStyle = g2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // ===== CENTRE plus doux
+                {
+                    ctx.fillStyle = "rgba(255,255,255,0.25)";
+                    ctx.beginPath();
+                    ctx.arc(x, y, R * 0.9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.restore();
             }
 
             // ====== ATTAQUE BOMBE (zone rouge -> explosion) ======***********************************************************************************
@@ -976,6 +1120,8 @@
 
                 // player move
                 if (isMoving) {
+                    playerTrail.push({ x: playerPos.x, y: playerPos.y, life: 1 });
+                    if (playerTrail.length > TRAIL_MAX) playerTrail.shift();
                     const dx = playerTarget.x - playerPos.x;
                     const dy = playerTarget.y - playerPos.y;
                     const dist = Math.hypot(dx, dy);
@@ -992,22 +1138,180 @@
                         playerPos.y += (dy / dist) * step;
                     }
                 }
+                for (const p of playerTrail) p.life -= dt * 2.2;  // vitesse de disparition
+                playerTrail = playerTrail.filter(p => p.life > 0);
 
                 // fire attack
                 updateFire(dt);
                 updateBomb(dt);
                 updateKaiju(dt);
+                updateEnergyFX(dt);
             }
 
 
+            function drawPlayerFancy(x, y) {
+                ctx.save();
 
+                // ========= TRAIL / CHALEUR (capsules) =========
+                if (playerTrail.length >= 2) {
+                    for (let i = 0; i < playerTrail.length - 1; i++) {
+                        const a = playerTrail[i];
+                        const b = playerTrail[i + 1];
+                        const t = a.life; // 1 -> 0
+
+                        const dx = b.x - a.x;
+                        const dy = b.y - a.y;
+                        const ang = Math.atan2(dy, dx);
+                        const dist = Math.hypot(dx, dy);
+
+                        // capsule = un rectangle arrondi avec rotation
+                        ctx.save();
+                        ctx.translate(a.x, a.y);
+                        ctx.rotate(ang);
+
+                        const w = Math.max(22, dist);
+                        const h = 26;
+
+                        // glow
+                        ctx.fillStyle = `rgba(180, 80, 255, ${0.38 * t})`;
+                        roundRectFill(-w * 0.2, -h / 2, w, h, 999);
+
+                        // coeur clair
+                        ctx.fillStyle = `rgba(200, 160, 255, ${0.10 * t})`;
+                        roundRectFill(-w * 0.1, -h * 0.35, w * 0.75, h * 0.7, 999);
+
+                        ctx.restore();
+                    }
+                }
+
+                // ========= HALO EXTERNE =========
+                ctx.fillStyle = "rgba(160, 60, 255, 0.18)";
+                ctx.beginPath();
+                ctx.arc(x, y, 44, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ========= BOULE =========
+                ctx.fillStyle = "#a03cff";
+                ctx.beginPath();
+                ctx.arc(x, y, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ========= ÉTOILE LUMINEUSE =========
+                drawStar(x, y, 10, 22, 12, "rgba(40,0,255,0.95)");
+                drawStar(x, y, 6, 16, 12, "rgba(255,255,255,0.35)");
+
+                // petit reflet
+                ctx.fillStyle = "rgba(255,255,255,0.55)";
+                ctx.beginPath();
+                ctx.arc(x - 6, y - 7, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // étoile
+            function drawStar(cx, cy, innerR, outerR, spikes, color) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.beginPath();
+
+                let rot = -Math.PI / 2;
+                const step = Math.PI / spikes;
+
+                ctx.moveTo(cx, cy - outerR);
+                for (let i = 0; i < spikes; i++) {
+                    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+                    rot += step;
+                    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+                    rot += step;
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // rectangle arrondi simple
+            function roundRectFill(x, y, w, h, r) {
+                const rr = Math.min(r, w / 2, h / 2);
+                ctx.beginPath();
+                ctx.moveTo(x + rr, y);
+                ctx.arcTo(x + w, y, x + w, y + h, rr);
+                ctx.arcTo(x + w, y + h, x, y + h, rr);
+                ctx.arcTo(x, y + h, x, y, rr);
+                ctx.arcTo(x, y, x + w, y, rr);
+                ctx.closePath();
+                ctx.fill();
+            }
+            let energyFX = []; // effets visuels de ramassage
+
+            function spawnEnergyPop(x, y) {
+                // anneau + particules
+                energyFX.push({
+                    x, y,
+                    t: 0,
+                    duration: 0.45,
+                    sparks: Array.from({ length: 10 }, () => {
+                        const a = Math.random() * Math.PI * 2;
+                        const sp = 160 + Math.random() * 220;
+                        return { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 2 + Math.random() * 2 };
+                    })
+                });
+            }
+
+            function updateEnergyFX(dt) {
+                for (const fx of energyFX) fx.t += dt;
+                energyFX = energyFX.filter(fx => fx.t < fx.duration);
+            }
+
+            function drawEnergyFX() {
+                for (const fx of energyFX) {
+                    const p = fx.t / fx.duration;       // 0 -> 1
+                    const a = 1 - p;                    // fade out
+
+                    // anneau pop
+                    ctx.save();
+                    ctx.globalCompositeOperation = "lighter";
+                    ctx.strokeStyle = `rgba(0,255,160,${0.9 * a})`;
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, 18 + p * 55, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // petit flash
+                    ctx.fillStyle = `rgba(220,255,245,${0.20 * a})`;
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, 22 + p * 35, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // sparks
+                    for (const s of fx.sparks) {
+                        const sx = fx.x + s.vx * fx.t * 0.018;
+                        const sy = fx.y + s.vy * fx.t * 0.018;
+                        ctx.fillStyle = `rgba(0,255,160,${0.85 * a})`;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.globalCompositeOperation = "source-over";
+
+                    // +1 flottant
+                    ctx.fillStyle = `rgba(190,255,225,${0.95 * a})`;
+                    ctx.font = "bold 18px system-ui";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("+1", fx.x, fx.y - 30 - p * 22);
+
+                    ctx.restore();
+                }
+            }
             // ====== Draw ======
             function draw() {
                 resizeCanvasToDisplaySize();
                 update();
                 // NE PAS remplir en blanc : le CSS du canvas fait le fond
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
+
                 const { ox, oy } = getCenterOffset();
                 ctx.save();
                 ctx.translate(ox, oy);
@@ -1098,28 +1402,10 @@
                 drawBombExplosion();
                 drawKaiju();
                 drawEnergyModule();
+                drawEnergyFX();
 
 
-                // joueur (dessiné au-dessus)
-                {
-                    const px = playerPos.x;
-                    const py = playerPos.y;
-
-                    ctx.fillStyle = "rgba(0, 170, 255, 0.25)";
-                    ctx.beginPath();
-                    ctx.arc(px, py, 34, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.fillStyle = "#00aaff";
-                    ctx.beginPath();
-                    ctx.arc(px, py, 18, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.fillStyle = "rgba(255,255,255,0.65)";
-                    ctx.beginPath();
-                    ctx.arc(px - 6, py - 6, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+                drawPlayerFancy(playerPos.x, playerPos.y);
 
                 // texte édition
                 if (editMode) {
@@ -1134,7 +1420,7 @@
                     ctx.textAlign = "left";
                     ctx.fillText("Touche F : tir horizontal | Shift+F : tir vertical", 14, 24);
                 }
-                
+
                 ctx.restore();
                 //jeu terminer
                 if (gameOver || gameWon) {
@@ -1263,7 +1549,7 @@
             draw();
         })();
 
-       
+
 
 
 
