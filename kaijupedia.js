@@ -1,51 +1,44 @@
 window.addEventListener("DOMContentLoaded", () => {
   // ============================================================
-  // PARTIE 1 : SYSTÈME DE HP / STABILITÉ (PRIORITAIRE)
-  // (Doit marcher sur TOUTES les pages)
+  // PARTIE 1 : HP / STABILITÉ
   // ============================================================
   const hpFill = document.getElementById("hpFill");
   const hpText = document.getElementById("hpText");
 
   function updateHPDisplay() {
-    // 1. On récupère la valeur stockée (ou 50 par défaut)
     let currentHP = localStorage.getItem("kaijuHP");
-    
+
     if (currentHP === null) {
       currentHP = 50;
-      localStorage.setItem("kaijuHP", 50);
+      localStorage.setItem("kaijuHP", "50");
     } else {
-      currentHP = parseInt(currentHP);
+      currentHP = parseInt(currentHP, 10);
     }
 
-    // 2. Sécuriser les limites (0 à 100)
     currentHP = Math.max(0, Math.min(100, currentHP));
 
-    // 3. Mettre à jour l'affichage
     if (hpFill && hpText) {
       hpFill.style.width = currentHP + "%";
       hpText.textContent = currentHP + "%";
-      
-      // Changer la couleur selon la santé
+
       if (currentHP < 30) {
-        hpFill.style.background = "#f00"; // Rouge critique
+        hpFill.style.background = "#f00";
         hpFill.style.boxShadow = "0 0 15px #f00";
       } else if (currentHP > 70) {
-        hpFill.style.background = "#4f4"; // Vert sain
+        hpFill.style.background = "#4f4";
+        hpFill.style.boxShadow = "0 0 15px rgba(80,255,80,.35)";
       } else {
-        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)"; // Normal
+        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)";
+        hpFill.style.boxShadow = "0 0 12px rgba(182, 74, 42, 0.35)";
       }
     }
   }
 
-  // Lancer l'affichage immédiatement
   updateHPDisplay();
-
-  // Écouter les changements (si tu joues dans un autre onglet)
   window.addEventListener("storage", updateHPDisplay);
 
-
   // ============================================================
-  // PARTIE 2 : BOUTON QUI FUIT (Pour la page d'accueil)
+  // PARTIE 2 : BOUTON QUI FUIT (si présent)
   // ============================================================
   const btn = document.getElementById("archivesBtn");
   const hero = document.querySelector(".hero");
@@ -63,7 +56,6 @@ window.addEventListener("DOMContentLoaded", () => {
         const hr = hero.getBoundingClientRect();
         const maxX = hr.width - btn.offsetWidth - PADDING * 2;
         const maxY = hr.height - btn.offsetHeight - PADDING * 2;
-
         if (maxX <= 0 || maxY <= 0) return;
 
         const x = PADDING + Math.random() * maxX;
@@ -83,9 +75,8 @@ window.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("mouseleave", () => clearTimeout(timer));
   }
 
-
   // ============================================================
-  // PARTIE 3 : LE SYSTÈME "LIFT" (Pour kaijupedia 1 et 2)
+  // PARTIE 3 : LIFT (si présent)
   // ============================================================
   const lift = document.getElementById("kaijuLift");
   const cover = document.getElementById("kaijuCover");
@@ -93,9 +84,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const go = document.getElementById("kaijuGo");
   const msg = document.getElementById("kaijuMsg");
 
-  // On vérifie si le module existe. S'il n'existe pas, ON N'ARRÊTE PAS LE SCRIPT (pour que HP marche)
   if (lift && cover && input && go && msg) {
-    
     let dragging = false;
     let startY = 0;
     let current = 0;
@@ -138,7 +127,8 @@ window.addEventListener("DOMContentLoaded", () => {
     function onUp() {
       if (!dragging) return;
       dragging = false;
-      cover.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+      cover.style.transition =
+        "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
       if (!unlocked) setCover(0);
     }
 
@@ -156,16 +146,13 @@ window.addEventListener("DOMContentLoaded", () => {
     cover.addEventListener("pointerup", onUp);
     cover.addEventListener("pointercancel", onUp);
 
-    // LOGIQUE DU MOT DE PASSE (MODIFIÉE POUR ACCEPTER K-739)
     function tryWord() {
       const v = input.value.trim().toUpperCase();
 
-      // CODE POUR KAIJUPEDIA 1 -> K-739
       if (v === "K-739") {
         msg.style.color = "#4ff";
         msg.textContent = "ACCÈS AUTORISÉ";
         setTimeout(() => {
-          // Vers le jeu RITUEL
           window.location.href = "./mini-jeux/jeu1/rituel.html";
         }, 800);
         return;
@@ -173,13 +160,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
       msg.style.color = "#f55";
       msg.textContent = "REFUSÉ";
-      
-      lift.animate([
-        { transform: "translateX(0)" },
-        { transform: "translateX(-5px)" },
-        { transform: "translateX(5px)" },
-        { transform: "translateX(0)" }
-      ], { duration: 300 });
+
+      lift.animate(
+        [
+          { transform: "translateX(0)" },
+          { transform: "translateX(-5px)" },
+          { transform: "translateX(5px)" },
+          { transform: "translateX(0)" },
+        ],
+        { duration: 300 }
+      );
       input.value = "";
     }
 
@@ -188,54 +178,106 @@ window.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") tryWord();
     });
   }
-<<<<<<< HEAD
 
-  async function possessAndGuide() {
-    if (running) return;
-    running = true;
+  // ============================================================
+  // PARTIE 4 : POSSESSION TÉLÉPHONE (safe)
+  // ============================================================
+  try {
+    const phone = document.getElementById("phoneCall");
+    const target = document.getElementById("targetimg"); // <- ton image a cet id dans ton HTML
+    let running = false;
 
-    // position de départ = centre du téléphone
-    const from = getCenterRect(phone);
-    const to = getCenterRect(target);
+    if (phone && target) {
+      function getCenterRect(el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
 
-    document.body.classList.add("possession-lock");
+      function createShield() {
+        const shield = document.createElement("div");
+        shield.className = "possession-shield";
+        document.body.appendChild(shield);
+        return shield;
+      }
 
-    const shield = createShield();        // bloque les clics
-    const fakeCursor = createFakeCursor(from.x, from.y);
+      function createFakeCursor(x, y) {
+        const c = document.createElement("div");
+        c.className = "possessed-cursor";
+        c.style.left = `${x}px`;
+        c.style.top = `${y}px`;
+        document.body.appendChild(c);
+        return c;
+      }
 
-    // petit délai “prise de contrôle”
-    await new Promise((r) => setTimeout(r, 180));
+      function animateCursor(cursorEl, from, to, duration = 900) {
+        const start = performance.now();
 
-    // animation vers l’image cible
-    await animateCursor(fakeCursor, from, to, 900);
+        return new Promise((resolve) => {
+          function tick(t) {
+            const p = Math.min(1, (t - start) / duration);
+            const ease =
+              p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 
-    // effet final sur l’image (flash léger)
-    target.animate(
-      [{ filter: "brightness(1)" }, { filter: "brightness(1.25)" }, { filter: "brightness(1)" }],
-      { duration: 500, easing: "ease-out" }
-    );
+            const x = from.x + (to.x - from.x) * ease;
+            const y = from.y + (to.y - from.y) * ease;
 
-    // OPTION : déclencher ton mini-jeu ici (rediriger)
-    // window.location.href = "mini_jeu2.html";
+            cursorEl.style.left = `${x}px`;
+            cursorEl.style.top = `${y}px`;
 
-    // cleanup
-    await new Promise((r) => setTimeout(r, 250));
-    fakeCursor.remove();
-    shield.remove();
-    document.body.classList.remove("possession-lock");
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          }
+          requestAnimationFrame(tick);
+        });
+      }
 
-    running = false;
+      async function possessAndGuide() {
+        if (running) return;
+        running = true;
+
+        const from = getCenterRect(phone);
+        const to = getCenterRect(target);
+
+        document.body.classList.add("possession-lock");
+        const shield = createShield();
+        const fakeCursor = createFakeCursor(from.x, from.y);
+
+        await new Promise((r) => setTimeout(r, 180));
+        await animateCursor(fakeCursor, from, to, 900);
+
+        target.animate(
+          [
+            { filter: "brightness(1)" },
+            { filter: "brightness(1.25)" },
+            { filter: "brightness(1)" },
+          ],
+          { duration: 500, easing: "ease-out" }
+        );
+
+        // Ici tu peux déclencher mini-jeu 2 si tu veux :
+        // window.location.href = "./mini-jeux/jeu2/xxx.html";
+
+        await new Promise((r) => setTimeout(r, 250));
+        fakeCursor.remove();
+        shield.remove();
+        document.body.classList.remove("possession-lock");
+
+        running = false;
+      }
+
+      phone.addEventListener("mouseenter", possessAndGuide);
+      phone.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") possessAndGuide();
+      });
+    }
+  } catch (e) {
+    console.warn("Possession téléphone désactivée :", e);
   }
+}); // ✅ IMPORTANT : pas de () ici !
 
-  // Déclenchement au survol
-  phone.addEventListener("mouseenter", possessAndGuide);
-
-  // Bonus : déclenchement au clavier (accessibilité)
-  phone.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") possessAndGuide();
-  });
-})();
-
+// ============================================================
+// PARTIE 5 : TITRE CORRIGIBLE + REDIRECTION
+// ============================================================
 (() => {
   const display = document.getElementById("heroTitleDisplay");
   const input = document.getElementById("heroTitleInput");
@@ -244,7 +286,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const WRONG = "KAJIUPEDIA";
   const RIGHT = "KAIJUPEDIA";
 
-  // état initial : mal écrit
   display.textContent = WRONG;
 
   const normalize = (s) => (s || "").trim().toUpperCase();
@@ -268,32 +309,23 @@ window.addEventListener("DOMContentLoaded", () => {
     if (v === RIGHT) {
       display.textContent = RIGHT;
       closeEdit();
-
-      // ✅ ICI tu peux déclencher un truc (optionnel) :
-      // window.location.href = "mini_jeu2.html";
-      // ou jouer un son / ajouter une classe / etc.
-      display.classList.add("is-fixed");
-      window.location.href = "./mini-jeux/jeu56.html";
-
+      window.location.href = "./mini-jeux/jeu56.html"; // <- ton mini-jeu
     } else {
       input.classList.add("is-bad");
       input.select();
     }
   }
 
-  // Click / clavier sur le titre
   display.addEventListener("click", openEdit);
   display.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") openEdit();
   });
 
-  // Validation dans l’input
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") validate();
     if (e.key === "Escape") closeEdit();
   });
 
-  // Si on clique ailleurs : fermer
   document.addEventListener("click", (e) => {
     const editing = input.style.display === "inline-block";
     if (!editing) return;
@@ -301,6 +333,3 @@ window.addEventListener("DOMContentLoaded", () => {
     closeEdit();
   });
 })();
-=======
-});
->>>>>>> 1bb4e41c29e0b37afc2eedab88302e6147a28d3d
