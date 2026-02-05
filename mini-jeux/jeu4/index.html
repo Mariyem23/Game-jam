@@ -742,12 +742,36 @@ updateEnergyUI();
                 FIRE.visible = true;
                 FIRE.projectile = null;
             }
+            // ===== LIMITES DU TERRAIN (zone bleue) =====
+            function getPlayBounds() {
+                // limites basées sur ton graphe (terrain), pas sur l'écran
+                const b = getNodesBounds();
+                const pad = 80; // marge autour du graphe (augmente/diminue)
+
+                return {
+                    left: b.minX - pad,
+                    right: b.maxX + pad,
+                    top: b.minY - pad,
+                    bottom: b.maxY + pad
+                };
+            }
+
+            function clamp(v, a, b) {
+                return Math.max(a, Math.min(b, v));
+            }
 
             function spawnProjectile() {
+                const b = getPlayBounds();
+
+                FIRE.lineX = clamp(FIRE.lineX, b.left, b.right);
+                FIRE.lineY = clamp(FIRE.lineY, b.top, b.bottom);
+
+                const off = 220; // distance hors terrain avant d'entrer
+
                 if (FIRE.axis === "h") {
                     const fromLeft = Math.random() < 0.5;
                     FIRE.projectile = {
-                        x: fromLeft ? -60 : canvas.width + 60,
+                        x: fromLeft ? b.left - off : b.right + off,
                         y: FIRE.lineY,
                         vx: fromLeft ? FIRE_SPEED : -FIRE_SPEED,
                         vy: 0
@@ -756,7 +780,7 @@ updateEnergyUI();
                     const fromTop = Math.random() < 0.5;
                     FIRE.projectile = {
                         x: FIRE.lineX,
-                        y: fromTop ? -60 : canvas.height + 60,
+                        y: fromTop ? b.top - off : b.bottom + off,
                         vx: 0,
                         vy: fromTop ? FIRE_SPEED : -FIRE_SPEED
                     };
@@ -812,7 +836,9 @@ updateEnergyUI();
                 }
 
                 // fin quand sort de l'écran
-                if (p.x < -120 || p.x > canvas.width + 120 || p.y < -120 || p.y > canvas.height + 120) {
+                const b = getPlayBounds();
+                const out = 260;
+                if (p.x < b.left - out || p.x > b.right + out || p.y < b.top - out || p.y > b.bottom + out) {
                     FIRE.state = "idle";
                     FIRE.projectile = null;
                 }
@@ -841,13 +867,12 @@ updateEnergyUI();
 
                 ctx.restore();
             }
-
             function drawBorderWarning() {
                 if (FIRE.state !== "warning" || !FIRE.visible) return;
 
-                ctx.save();
+                const b = getPlayBounds();
 
-                // ligne rouge légère
+                ctx.save();
                 ctx.strokeStyle = "rgba(255,0,0,0.35)";
                 ctx.lineWidth = 8;
                 ctx.lineCap = "round";
@@ -855,33 +880,88 @@ updateEnergyUI();
                 if (FIRE.axis === "h") {
                     const y = FIRE.lineY;
                     ctx.beginPath();
-                    ctx.moveTo(20, y);
-                    ctx.lineTo(canvas.width - 20, y);
+                    ctx.moveTo(b.left, y);
+                    ctx.lineTo(b.right, y);
                     ctx.stroke();
 
-                    // warning aux 2 bords (gauche + droite)
-                    drawWarningAt(40, y);
-                    drawWarningAt(canvas.width - 40, y);
+                    drawWarningAt(b.left, y);
+                    drawWarningAt(b.right, y);
                 } else {
                     const x = FIRE.lineX;
                     ctx.beginPath();
-                    ctx.moveTo(x, 20);
-                    ctx.lineTo(x, canvas.height - 20);
+                    ctx.moveTo(x, b.top);
+                    ctx.lineTo(x, b.bottom);
                     ctx.stroke();
 
-                    // warning haut + bas
-                    drawWarningAt(x, 40);
-                    drawWarningAt(x, canvas.height - 40);
+                    drawWarningAt(x, b.top);
+                    drawWarningAt(x, b.bottom);
                 }
 
                 ctx.restore();
             }
+            function drawFireballAura(x, y, vx, vy, baseR) {
+                const speed = Math.hypot(vx, vy);
+                if (speed < 0.01) return;
 
+                const nx = vx / speed;
+                const ny = vy / speed;
+
+                const stretch = Math.min(70, speed * 0.22); // longueur aura
+                const t = performance.now() * 0.006;
+
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+
+                // ===== AURA PRINCIPALE (directionnelle)
+                {
+                    const g = ctx.createRadialGradient(
+                        x - nx * stretch * 0.6,
+                        y - ny * stretch * 0.6,
+                        baseR * 0.4,
+                        x - nx * stretch,
+                        y - ny * stretch,
+                        baseR + stretch
+                    );
+
+                    g.addColorStop(0.0, "rgba(180,245,255,0.45)");
+                    g.addColorStop(0.4, "rgba(120,220,255,0.30)");
+                    g.addColorStop(1.0, "rgba(0,160,255,0.00)");
+
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        x - nx * stretch * 0.6,
+                        y - ny * stretch * 0.6,
+                        baseR + stretch * 0.9,
+                        baseR * 0.85,
+                        Math.atan2(ny, nx),
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+
+                // ===== PULSE CHALEUR
+                {
+                    const pulse = Math.sin(t * 2.2) * 0.5 + 0.5;
+                    const r = baseR + 10 + pulse * 6;
+
+                    ctx.strokeStyle = `rgba(140,230,255,${0.18 + pulse * 0.18})`;
+                    ctx.lineWidth = 10 + pulse * 8;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.globalCompositeOperation = "source-over";
+                ctx.restore();
+            }
             function drawFireball() {
                 if (FIRE.state !== "firing" || !FIRE.projectile) return;
 
                 const p = FIRE.projectile;
                 const x = p.x, y = p.y;
+                drawFireballAura(x, y, p.vx, p.vy, FIRE_RADIUS + 8);
 
                 // Taille visuelle (tu peux ajuster)
                 const R = FIRE_RADIUS;          // rayon "hitbox"
@@ -1456,14 +1536,14 @@ updateEnergyUI();
                 const axis = Math.random() < 0.5 ? "h" : "v";
                 FIRE.axis = axis;
 
-                // Position aléatoire sur l'écran (évite trop proche des bords)
-                const margin = 80;
+                const b = getPlayBounds();
+
                 if (axis === "h") {
-                    FIRE.lineY = margin + Math.random() * (canvas.height - margin * 2);
-                    FIRE.lineX = playerPos.x; // pas utilisé pour h, mais ok
+                    FIRE.lineY = b.top + Math.random() * (b.bottom - b.top);
+                    FIRE.lineX = playerPos.x;
                 } else {
-                    FIRE.lineX = margin + Math.random() * (canvas.width - margin * 2);
-                    FIRE.lineY = playerPos.y; // pas utilisé pour v, mais ok
+                    FIRE.lineX = b.left + Math.random() * (b.right - b.left);
+                    FIRE.lineY = playerPos.y;
                 }
 
                 FIRE.state = "warning";
