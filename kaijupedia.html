@@ -24,7 +24,7 @@
         gap: 20px;
         margin-bottom: 20px;
         align-items: center;
-        background: rgba(0,0,0,0.3);
+        background: rgba(0, 0, 0, 0.3);
         border: 1px solid var(--line);
         padding: 15px;
         border-radius: var(--radius);
@@ -37,8 +37,15 @@
         border: 1px solid var(--accent);
         filter: sepia(0.5) contrast(1.2);
       }
-      .lore-row:nth-child(even) { flex-direction: row-reverse; }
-      @media (max-width: 700px) { .lore-row { flex-direction: column; text-align: center; } }
+      .lore-row:nth-child(even) {
+        flex-direction: row-reverse;
+      }
+      @media (max-width: 700px) {
+        .lore-row {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
     </style>
   </head>
 
@@ -101,7 +108,11 @@
             <div class="hero__actions"></div>
           </div>
         </div>
-        <a href="./mini-jeux/jeu2/cadenas.html" class="btn-archives" id="archivesBtn">
+        <a
+          href="./mini-jeux/jeu2/cadenas.html"
+          class="btn-archives"
+          id="archivesBtn"
+        >
           ENTRER DANS LES ARCHIVES
         </a>
       </section>
@@ -114,94 +125,73 @@
 
         <div class="lore-container">
           <div class="lore-row">
-            <img src="assets/kaiju/KAIJU_1.png" alt="Mythe">
+            <img src="assets/kaiju/KAIJU_1.png" alt="Mythe" />
             <div>
               <h4>The Monsters of Myth</h4>
-              <p style="color:var(--muted); font-size:14px; line-height:1.6;">
-                Depuis les temps anciens, les légendes parlent de bêtes colossales
-                dormant sous la mer ou dans la terre. Ces créatures ne sont pas de
-                simples animaux, mais des forces de la nature incarnées.
+              <p style="color: var(--muted); font-size: 14px; line-height: 1.6">
+                Depuis les temps anciens, les légendes parlent de bêtes
+                colossales dormant sous la mer ou dans la terre. Ces créatures
+                ne sont pas de simples animaux, mais des forces de la nature
+                incarnées.
               </p>
             </div>
           </div>
 
           <div class="lore-row">
-            <img src="assets/kaiju/KAIJU_2.png" alt="Colère">
+            <img src="assets/kaiju/KAIJU_2.png" alt="Colère" />
             <div>
               <h4>Nature's Wrath</h4>
-              <p style="color:var(--muted); font-size:14px; line-height:1.6;">
+              <p style="color: var(--muted); font-size: 14px; line-height: 1.6">
                 Les Kaijus se réveillent souvent en réponse à l'arrogance de
-                l'humanité. Ils sont l'équilibre, la punition divine envoyée pour
-                remettre le monde à zéro.
+                l'humanité. Ils sont l'équilibre, la punition divine envoyée
+                pour remettre le monde à zéro.
               </p>
             </div>
           </div>
 
           <div class="lore-row">
-  <div class="lift" id="kaijuLift">
-  <div class="lift__under">
-    <div class="lift__gate">
-      <div class="lift__gateTitle" style="font-size:10px; color:red;">RESTRICTED ACCESS</div>
-      <div class="lift__row">
-        <input id="kaijuWord" class="lift__input" type="text" placeholder="Pass...">
-        <button id="kaijuGo" class="lift__btn">➜</button>
-      </div>
-      <div id="kaijuMsg" class="lift__msg"></div>
-    </div>
-  </div>
+            <div class="lift" id="kaijuLift">
+              <div class="lift__under">
+                <div class="lift__gate">
+                  <div
+                    class="lift__gateTitle"
+                    style="font-size: 10px; color: red"
+                  >
+                    RESTRICTED ACCESS
+                  </div>
+                  <div class="lift__row">
+                    <input
+                      id="kaijuWord"
+                      class="lift__input"
+                      type="text"
+                      placeholder="Pass..."
+                    />
+                    <button id="kaijuGo" class="lift__btn">➜</button>
+                  </div>
+                  <div id="kaijuMsg" class="lift__msg"></div>
+                </div>
+              </div>
 
-  <div class="lift__cover" id="kaijuCover">
-    <img class="lift__img" src="assets/kaiju/KAIJU_1.png" alt="KAIJU">
-    <div class="lift__hint">SOULEVER</div>
-  </div>
-</div>
+              <div class="lift__cover" id="kaijuCover">
+                <img
+                  class="lift__img"
+                  src="assets/kaiju/KAIJU_1.png"
+                  alt="KAIJU"
+                  id="targetimg"
+                />
+                <div class="lift__hint">SOULEVER</div>
+              </div>
+            </div>
 
-  <div>
-    <h4>The Monsters of Myth</h4>
-    <p>Depuis les temps anciens...</p>
-  </div>
-</div>
+            <div>
+              <h4>The Monsters of Myth</h4>
+              <p>Depuis les temps anciens...</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="top3" class="section">
-        <div class="section__head">
-          <h3>TOP 3 ICONIC KAIJU</h3>
-          <p>Classification des entités de classe Alpha.</p>
-        </div>
-
-        <div class="grid">
-          <article class="card" style="border-color: var(--accent);">
-            <div class="card__top">
-              <h4>GODZILLA</h4>
-              <span class="tag">Roi</span>
-            </div>
-            <p>Le Roi des Monstres.</p>
-            <p style="font-size:12px; color:white;">Rayon atomique, régénération, force brute.</p>
-            <a class="card__link" href="#">Voir le dossier →</a>
-          </article>
-
-          <article class="card">
-            <div class="card__top">
-              <h4>MOTHRA</h4>
-              <span class="tag">Reine</span>
-            </div>
-            <p>La Reine des Monstres.</p>
-            <p style="font-size:12px; color:white;">Ailes divines, poudre paralysante, bienveillance.</p>
-            <a class="card__link" href="#">Voir le dossier →</a>
-          </article>
-
-          <article class="card">
-            <div class="card__top">
-              <h4>GHIDORAH</h4>
-              <span class="tag">Némésis</span>
-            </div>
-            <p>L'Ennemi Zéro.</p>
-            <p style="font-size:12px; color:white;">Trois têtes, éclairs gravitationnels, origine alien.</p>
-            <a class="card__link" href="#">Voir le dossier →</a>
-          </article>
-        </div>
-      </section>
+      
 
       <section id="communaute" class="section section--thin">
         <div class="signal">
@@ -209,9 +199,18 @@
             <h3>Join the Kaiju Community</h3>
             <p>Connectez-vous avec d'autres chercheurs et fans aujourd'hui.</p>
           </div>
-          <button class="btn btn--primary" type="button">
-            REJOINDRE LE RÉSEAU
-          </button>
+          <div class="urgentRight">
+            <div
+              class="phoneCall"
+              id="phoneCall"
+              role="button"
+              tabindex="0"
+              aria-label="Numéro d'urgence"
+            >
+              <span class="phoneIcon" aria-hidden="true">☎</span>
+              <span class="phoneNumber">09 73 00 21 88</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -220,7 +219,6 @@
       </footer>
     </main>
 
-    
     <script src="./kaijupedia.js"></script>
   </body>
 </html>

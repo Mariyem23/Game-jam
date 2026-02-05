@@ -156,3 +156,100 @@ window.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") tryWord();
   });
 });
+(() => {
+  const phone = document.getElementById("phoneCall");
+  const target = document.getElementById("targetimg");
+
+  if (!phone || !target) return;
+
+  let running = false;
+
+  function getCenterRect(el) {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function createShield() {
+    const shield = document.createElement("div");
+    shield.className = "possession-shield";
+    document.body.appendChild(shield);
+    return shield;
+  }
+
+  function createFakeCursor(startX, startY) {
+    const c = document.createElement("div");
+    c.className = "possessed-cursor";
+    c.style.left = `${startX}px`;
+    c.style.top = `${startY}px`;
+    document.body.appendChild(c);
+    return c;
+  }
+
+  function animateCursor(cursorEl, from, to, duration = 900) {
+    const start = performance.now();
+
+    return new Promise((resolve) => {
+      function tick(t) {
+        const p = Math.min(1, (t - start) / duration);
+
+        // easing smooth (easeInOut)
+        const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+
+        const x = from.x + (to.x - from.x) * ease;
+        const y = from.y + (to.y - from.y) * ease;
+
+        cursorEl.style.left = `${x}px`;
+        cursorEl.style.top = `${y}px`;
+
+        if (p < 1) requestAnimationFrame(tick);
+        else resolve();
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  async function possessAndGuide() {
+    if (running) return;
+    running = true;
+
+    // position de départ = centre du téléphone
+    const from = getCenterRect(phone);
+    const to = getCenterRect(target);
+
+    document.body.classList.add("possession-lock");
+
+    const shield = createShield();        // bloque les clics
+    const fakeCursor = createFakeCursor(from.x, from.y);
+
+    // petit délai “prise de contrôle”
+    await new Promise((r) => setTimeout(r, 180));
+
+    // animation vers l’image cible
+    await animateCursor(fakeCursor, from, to, 900);
+
+    // effet final sur l’image (flash léger)
+    target.animate(
+      [{ filter: "brightness(1)" }, { filter: "brightness(1.25)" }, { filter: "brightness(1)" }],
+      { duration: 500, easing: "ease-out" }
+    );
+
+    // OPTION : déclencher ton mini-jeu ici (rediriger)
+    // window.location.href = "mini_jeu2.html";
+
+    // cleanup
+    await new Promise((r) => setTimeout(r, 250));
+    fakeCursor.remove();
+    shield.remove();
+    document.body.classList.remove("possession-lock");
+
+    running = false;
+  }
+
+  // Déclenchement au survol
+  phone.addEventListener("mouseenter", possessAndGuide);
+
+  // Bonus : déclenchement au clavier (accessibilité)
+  phone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") possessAndGuide();
+  });
+})();

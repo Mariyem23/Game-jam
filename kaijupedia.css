@@ -819,3 +819,60 @@ body {
   padding: 2px 6px;
   border-radius: 4px;
 }
+/* ---- Téléphone à la place du bouton ---- */
+.phoneCall{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 16px;
+  border-radius: 10px;
+
+  background: rgba(0,0,0,0.25);
+  color: #f1e6cf;
+  text-decoration: underline #6f2418;
+  cursor: pointer;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.phoneCall:hover{
+  filter: brightness(1.08);
+}
+
+.phoneIcon{
+  font-size: 18px;
+  opacity: 0.95;
+}
+
+.phoneNumber{
+  font-size: 20px;
+  opacity: 0.95;
+  text-underline-offset: var(--accent);
+}
+
+/* ---- Mode possession : on bloque les clics sur la page ---- */
+body.possession-lock{
+  cursor: none;              /* cache le curseur système (visuel) */
+}
+
+.possession-shield{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+/* Faux curseur possédé */
+.possessed-cursor{
+  position: fixed;
+  left: 0; top: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid #6f2418;
+  box-shadow: 0 0 18px rgba(225, 172, 36, 0.35);
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
