@@ -22,13 +22,11 @@ SI TU HESITES, L ECRAN SE REMPLIRA DE FENETRES.
 SI TU REFUSES, IL VIENDRA QUAND MEME.`;
 
 // ============================
-// TIMER (10 MINUTES AVANT COLLAPSE)
+// TIMER (10 MINUTES)
 // ============================
 const STABLE_TIME_SEC = 600; // 10:00
 let timeLeft = STABLE_TIME_SEC;
 
-let collapseMode = false; // deviens true quand timer = 0
-let influence = 0;        // 0..100
 let gameOver = false;
 
 // ============================
@@ -44,9 +42,9 @@ const el = {
   corruptFill: document.getElementById("corruptFill"),
   glitch: document.getElementById("glitchLayer"),
   timer: document.getElementById("timer"),
-  popups: document.getElementById("popups"),
   panel: document.getElementById("panel"),
   phaseTag: document.getElementById("phaseTag"),
+  abandonBtn: document.getElementById("abandonBtn"),
 };
 
 // ============================
@@ -206,7 +204,6 @@ function updateItemState(item, glyph){
     inp.classList.add("bad");
     if (mark) mark.textContent = "";
   } else {
-    // normalement lock direct, mais au cas ou
     inp.classList.remove("bad");
     if (mark) mark.textContent = "VERROUILLE ✓";
   }
@@ -233,7 +230,6 @@ function renderPlain(){
 }
 
 function isFullyTranslated(){
-  // tout glyphe utilise doit etre locke
   for (const g of USED_GLYPHS){
     if (!locked.has(g)) return false;
   }
@@ -245,12 +241,28 @@ function escapeHtml(s){
 }
 
 // ============================
-// TIMER: 10:00 -> COLLAPSE
+// TIMER: 10:00 -> REDIRECT
 // ============================
 function formatTime(s){
   const m = Math.floor(s/60);
   const r = s % 60;
   return `${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}`;
+}
+
+function endAndRedirect(reason){
+  if (gameOver) return;
+  gameOver = true;
+
+  el.phaseTag.textContent = "FIN";
+  el.status.textContent = reason || "Fin.";
+  el.status.style.color = "rgba(255,140,140,0.95)";
+
+  // petit glitch visuel OK, mais pas de popups
+  el.glitch.style.opacity = "0.35";
+
+  setTimeout(() => {
+    window.location.href = "kaijupedia.html";
+  }, 700);
 }
 
 function startTimer(){
@@ -259,258 +271,94 @@ function startTimer(){
   setInterval(() => {
     if (gameOver) return;
 
-    if (!collapseMode){
-      timeLeft = Math.max(0, timeLeft - 1);
-      el.timer.textContent = formatTime(timeLeft);
+    timeLeft = Math.max(0, timeLeft - 1);
+    el.timer.textContent = formatTime(timeLeft);
 
-      // pendant stable: intrusion quasi nulle
-      if (timeLeft <= 0){
-        enterCollapseMode();
-      }
-      return;
+    if (timeLeft <= 0){
+      endAndRedirect("Temps écoulé… retour aux archives.");
     }
-
-    // collapse: intrusion monte vite + chaos
-    bumpInfluence(2 + (influence >= 70 ? 2 : 0)); // accelere sur la fin
   }, 1000);
-}
-
-function enterCollapseMode(){
-  collapseMode = true;
-  el.phaseTag.textContent = "COLLAPSE";
-  el.phaseTag.classList.add("phase--collapse");
-  el.status.textContent = "Stabilite perdue... l'interface deraille.";
-  el.status.style.color = "rgba(255,140,140,0.95)";
-
-  // petit spike
-  bumpInfluence(10);
-  spawnPopup(true);
-}
-
-// ============================
-// CHAOS: POPUPS + CONTROLES INCliCABLES + REORDER
-// ============================
-const POPUP_TEXTS = [
-  { title:"ALERTE", body:"Le protocole se fissure." },
-  { title:"ARCHIVES", body:"Le fragment refuse d'etre lu." },
-  { title:"SYSTÈME", body:"Acces refuse." },
-  { title:"INTRUSION", body:"Quelque chose pousse de l'autre cote." },
-  { title:"ERREUR 0x09", body:"Donnees incoherentes. Correction automatique..." },
-  { title:"SIGNAL", body:"La chose ecoute." },
-];
-
-function spawnPopup(force=false){
-  if (gameOver) return;
-  if (!collapseMode && !force) return;
-
-  const chance = force ? 1 : (influence >= 80 ? 0.75 : influence >= 55 ? 0.45 : 0.22);
-  if (Math.random() > chance) return;
-
-  const t = POPUP_TEXTS[Math.floor(Math.random()*POPUP_TEXTS.length)];
-  const p = document.createElement("div");
-  p.className = "popup";
-
-  const x = randInt(18, Math.max(24, window.innerWidth - 320));
-  const y = randInt(60, Math.max(90, window.innerHeight - 220));
-  p.style.left = `${x}px`;
-  p.style.top = `${y}px`;
-
-  const trap = influence >= 65 && Math.random() < 0.40;
-
-  p.innerHTML = `
-    <div class="popup__title">
-      <span>${t.title}</span>
-      <span style="opacity:.55">#${randInt(100,999)}</span>
-    </div>
-    <div class="popup__body">${t.body}</div>
-    <div class="popup__actions">
-      <button data-act="ok">OK</button>
-      <button data-act="close">FERMER</button>
-    </div>
-  `;
-
-  p.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (gameOver) return;
-
-      if (trap){
-        // le popup te "punit"
-        bumpInfluence(6);
-        disableControlsBriefly(900);
-        nudgeGuessButton();
-      }
-      p.remove();
-    });
-  });
-
-  el.popups.appendChild(p);
-
-  // drift
-  if (influence >= 60){
-    const drift = setInterval(() => {
-      if (!document.body.contains(p) || gameOver) return clearInterval(drift);
-      p.style.left = `${clamp(parseInt(p.style.left,10) + randInt(-8,8), 10, window.innerWidth - 310)}px`;
-      p.style.top  = `${clamp(parseInt(p.style.top,10) + randInt(-6,6), 44, window.innerHeight - 210)}px`;
-    }, 240);
-  }
-}
-
-function disableControlsBriefly(ms){
-  if (gameOver) return;
-  if (!collapseMode) return;
-
-  // guess: inclicable
-  el.guessBtn.style.pointerEvents = "none";
-  el.guessInput.style.pointerEvents = "none";
-
-  // bloque quelques inputs non lockes
-  const inputs = Array.from(el.grid.querySelectorAll(".mapitem"))
-    .filter(node => !locked.has(node.dataset.glyph))
-    .map(node => node.querySelector("input"))
-    .filter(Boolean);
-
-  const count = Math.min(randInt(1, 4), inputs.length);
-  shuffle(inputs).slice(0, count).forEach(inp => {
-    inp.style.pointerEvents = "none";
-    inp.style.filter = "brightness(0.75)";
-    setTimeout(() => {
-      if (gameOver) return;
-      inp.style.pointerEvents = "";
-      inp.style.filter = "";
-    }, ms);
-  });
-
-  setTimeout(() => {
-    if (gameOver) return;
-    el.guessBtn.style.pointerEvents = "";
-    el.guessInput.style.pointerEvents = "";
-  }, ms);
-}
-
-function nudgeGuessButton(){
-  if (!collapseMode) return;
-  const max = influence >= 80 ? 26 : 14;
-  el.guessBtn.style.transform = `translate(${rand(-max,max)}px, ${rand(-max,max)}px)`;
-  setTimeout(() => { el.guessBtn.style.transform = "translate(0,0)"; }, 240);
-}
-
-function reorderSymbolTable(){
-  if (!collapseMode) return;
-  // re-shuffle visuel de la table (super perturbant)
-  const nodes = Array.from(el.grid.children);
-  const sh = shuffle(nodes);
-  sh.forEach(n => el.grid.appendChild(n));
-}
-
-// ============================
-// INFLUENCE / GAMEOVER
-// ============================
-function bumpInfluence(amount){
-  if (gameOver) return;
-  influence = clamp(influence + amount, 0, 100);
-  el.corruptFill.style.width = `${influence}%`;
-
-  // overlay glitch + shake
-  el.glitch.style.opacity = String(Math.min(0.85, influence / 110));
-  const amp = influence >= 70 ? 2.0 : influence >= 40 ? 1.0 : 0.4;
-  el.panel.style.transform = `translate(${rand(-amp,amp)}px, ${rand(-amp,amp)}px)`;
-
-  // chaos events
-  spawnPopup(false);
-
-  if (influence >= 40 && Math.random() < 0.25) disableControlsBriefly(700);
-  if (influence >= 55 && Math.random() < 0.22) nudgeGuessButton();
-  if (influence >= 60 && Math.random() < 0.12) reorderSymbolTable();
-
-  // si trop haut: verrouille/controle perdu
-  if (influence >= 100){
-    loseControl();
-  }
-}
-
-function loseControl(){
-  if (gameOver) return;
-  gameOver = true;
-
-  el.corruptFill.style.width = "100%";
-  el.glitch.style.opacity = "0.92";
-  el.phaseTag.textContent = "PERDU";
-  el.phaseTag.classList.add("phase--collapse");
-
-  el.status.textContent = "Controle perdu... intrusion totale.";
-  el.status.style.color = "rgba(255,140,140,0.95)";
-
-  // spam popups
-  for (let i=0; i<7; i++) spawnPopup(true);
-
-  // disable tout
-  el.guessBtn.disabled = true;
-  el.guessInput.disabled = true;
-  el.grid.querySelectorAll("input").forEach(inp => inp.disabled = true);
 }
 
 // ============================
 // MOT-CLE
+// (fix: accepte aussi si l'utilisateur tape avec espaces)
+// + victoire => redirect kaijupedia
 // ============================
+function normalizeGuess(s){
+  return (s || "")
+    .toUpperCase()
+    .trim()
+    .replace(/\s+/g, ""); // enlève espaces
+}
+
 function checkKeyword(){
   if (gameOver) return;
 
-  const guess = (el.guessInput.value || "").trim().toUpperCase();
+  const guess = normalizeGuess(el.guessInput.value);
+  const target = normalizeGuess(KEYWORD);
 
-  // si pas tout traduit
-  if (!isFullyTranslated()){
-    // punition si TEMPLE trop tot
-    if (guess === KEYWORD){
-      el.status.textContent = "Trop tot. La chose ecoute...";
-      el.status.style.color = "rgba(255,140,140,0.95)";
-      if (!collapseMode) {
-        // meme en stable, ca declenche le collapse plus vite
-        timeLeft = Math.min(timeLeft, 10);
-        el.timer.textContent = formatTime(timeLeft);
-      }
-      if (!collapseMode) enterCollapseMode();
-      bumpInfluence(12);
-      spawnPopup(true);
-      return;
-    }
+  // Ici: tu veux que TEMPLE marche vraiment => on valide le mot-cle
+  // même si la traduction n'est pas 100% finie (sinon ça frustre).
+  if (guess === target){
+    el.status.textContent = "Protocole valide ✔ Retour aux archives…";
+    el.status.style.color = "rgba(160,255,190,0.95)";
 
-    el.status.textContent = "Traduction incomplete. Termine d'abord.";
-    el.status.style.color = "rgba(255,140,140,0.95)";
-    if (collapseMode) bumpInfluence(4);
+    el.glitch.style.opacity = "0";
+    setTimeout(() => {
+      window.location.href = "kaijupedia.html";
+    }, 700);
     return;
   }
 
-  if (guess === KEYWORD){
-    // victoire
-    el.status.textContent = "Protocole valide ✔ Le lieu a ete nomme.";
-    el.status.style.color = "rgba(160,255,190,0.95)";
-
-    // stop chaos
-    collapseMode = false;
-    influence = 0;
-    el.corruptFill.style.width = "0%";
-    el.glitch.style.opacity = "0";
-    el.panel.style.transform = "translate(0,0)";
-    el.phaseTag.textContent = "STABLE";
-    el.phaseTag.classList.remove("phase--collapse");
-
-    // supprime popups
-    el.popups.querySelectorAll(".popup").forEach(p => p.remove());
-
-    // option: redirect
-    // setTimeout(() => window.location.href = "kaijupedia.html", 900);
-  } else {
-    el.status.textContent = "Mot-cle incorrect.";
-    el.status.style.color = "rgba(255,140,140,0.95)";
-    if (collapseMode) bumpInfluence(8);
-    if (collapseMode) spawnPopup(false);
-  }
+  el.status.textContent = "Mot-cle incorrect.";
+  el.status.style.color = "rgba(255,140,140,0.95)";
 }
 
 el.guessBtn.addEventListener("click", checkKeyword);
 el.guessInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") checkKeyword();
 });
+
+// ============================
+// ABANDONNER (-15% progression)
+// ============================
+function applyProgressPenalty(percent){
+  const p = Number(percent) || 0;
+
+  // On supporte plusieurs clés au cas où tu changes plus tard
+  const keys = ["kaiju_progress", "kaijuProgress", "progress"];
+  let foundKey = null;
+  let value = null;
+
+  for (const k of keys){
+    const raw = localStorage.getItem(k);
+    if (raw !== null && raw !== "" && !Number.isNaN(Number(raw))){
+      foundKey = k;
+      value = Number(raw);
+      break;
+    }
+  }
+
+  // si rien n'existe, on part de 100 (ou 0 si tu préfères)
+  if (value === null) {
+    foundKey = "kaiju_progress";
+    value = 100;
+  }
+
+  const next = Math.max(0, value - p);
+  localStorage.setItem(foundKey, String(next));
+
+  // trace optionnelle
+  localStorage.setItem("kaiju_lastPenalty", String(p));
+}
+
+if (el.abandonBtn){
+  el.abandonBtn.addEventListener("click", () => {
+    applyProgressPenalty(15);
+    window.location.href = "kaijupedia.html";
+  });
+}
 
 // ============================
 // STATUS
@@ -522,21 +370,9 @@ function updateStatus(){
   let ok = 0;
   for (const g of USED_GLYPHS) if (locked.has(g)) ok++;
 
-  if (!collapseMode){
-    el.status.textContent = `Stabilite OK. Traduction: ${ok}/${total} symboles corrects.`;
-    el.status.style.color = "rgba(231,220,199,0.82)";
-  } else {
-    el.status.textContent = `COLLAPSE. Traduction: ${ok}/${total}. L'interface deraille.`;
-    el.status.style.color = "rgba(255,140,140,0.95)";
-  }
+  el.status.textContent = `Stabilité OK. Traduction: ${ok}/${total} symboles corrects. Mot-cle attendu: ${KEYWORD}`;
+  el.status.style.color = "rgba(231,220,199,0.82)";
 }
-
-// ============================
-// HELPERS
-// ============================
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function rand(min,max){ return Math.random()*(max-min)+min; }
-function randInt(min,max){ return Math.floor(rand(min, max+1)); }
 
 // ============================
 // INIT
