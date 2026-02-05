@@ -188,7 +188,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter") tryWord();
     });
   }
-<<<<<<< HEAD
 
   async function possessAndGuide() {
     if (running) return;
@@ -301,6 +300,3 @@ window.addEventListener("DOMContentLoaded", () => {
     closeEdit();
   });
 })();
-=======
-});
->>>>>>> 1bb4e41c29e0b37afc2eedab88302e6147a28d3d
