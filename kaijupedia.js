@@ -1,5 +1,44 @@
 window.addEventListener("DOMContentLoaded", () => {
   // ============================================================
+  // CLOSE BUTTON - VIDEO PERDU
+  // ============================================================
+  const closeBtn = document.querySelector(".winbtn--close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Créer un overlay avec la vidéo
+      const overlay = document.createElement("div");
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      `;
+      
+      const video = document.createElement("video");
+      video.src = "./assets/PERDU.mp4";
+      video.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 8px;
+      `;
+      video.autoplay = true;
+      video.controls = true;
+      
+      overlay.appendChild(video);
+      document.body.appendChild(overlay);
+    });
+  }
+
+  // ============================================================
   // PARTIE 1 : HP / STABILITÉ
   // ============================================================
   const hpFill = document.getElementById("hpFill");

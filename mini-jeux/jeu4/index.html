@@ -202,9 +202,65 @@ canvas{
   width:100%;
   height:100%;
   display:block;
+}
 
-  /* ✅ boost luminosité/contraste sans toucher au JS */
-  filter: brightness(1.25) contrast(1.12) saturate(1.18);
+/* ===== OVERLAY FIN DE JEU (NOUVEAU) ===== */
+#gameOverOverlay {
+    display: none; /* Caché par défaut */
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    backdrop-filter: blur(5px);
+}
+
+.end-card {
+    background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
+    border: 2px solid var(--accent);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(140, 47, 31, 0.4);
+    max-width: 500px;
+}
+
+.end-title {
+    font-size: 32px;
+    color: #fff;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+.end-msg {
+    color: #e7dcc7;
+    font-size: 16px;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.end-btn {
+    display: inline-block;
+    padding: 15px 30px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-family: "Cinzel", serif;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.end-btn:hover {
+    background: var(--accent2);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(182,74,42,0.6);
 }
 /* responsive */
 @media (max-width:720px){
