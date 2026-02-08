@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>KAJIU — Archives</title> <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <title>KAJIU — Archives</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap"
@@ -79,7 +80,7 @@
           <span class="lock">🔒</span>
           <span class="url">kaiju-archives.local/kajiupedia</span>
         </div>
-        
+
         <div class="tools">
           <button class="navbtn" title="Menu">⋯</button>
         </div>
@@ -101,14 +102,32 @@
       <section class="hero">
         <div class="hero__overlay">
           <div class="hero__frame">
-            <h1 class="hero__title">KAJIUPEDIA</h1>
+            <h1 class="hero__title" id="heroTitleWrap">
+              <span
+                id="heroTitleDisplay"
+                class="heroTitleDisplay"
+                role="button"
+                tabindex="0"
+              >
+                KAJIUPEDIA
+              </span>
+
+              <input
+                id="heroTitleInput"
+                class="heroTitleInput"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                inputmode="text"
+                placeholder="tapez le mot"
+              />
+            </h1>
             <h2 class="hero__subtitle">ILS VONT REVENIR</h2>
-            
+
             <div class="hero__actions"></div>
-            
           </div>
         </div>
-        </section>
+      </section>
 
       <section id="origines" class="section">
         <div class="section__head">
@@ -214,7 +233,7 @@
       <div class="hp-widget">
         <span class="hp-label">INSTABILITE DU PORTAIL :</span>
         <div class="hp-track">
-          <div class="hp-fill" id="hpFill" style="width: 50%;"></div>
+          <div class="hp-fill" id="hpFill" style="width: 50%"></div>
         </div>
         <span id="hpText" class="hp-val">50%</span>
       </div>

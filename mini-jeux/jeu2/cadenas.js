@@ -1,10 +1,10 @@
-// ========= CONFIG (VERSION SIMPLE) =========
-// Redirection vers la nouvelle page (on remonte de 2 dossiers)
+// ========= CONFIGURATION =========
+// Redirection vers la nouvelle page (version inversée)
 const HOME_URL = "../../kaijupedia2.html";   
 
 const TIME_LIMIT_MS = 6 * 60 * 1000;  // 6 minutes
 
-// Le code secret (d'après tes indices HTML : 4 1 9 / 5 4 7 / 2 8 7 -> Code probable 4-2-7)
+// Le code secret (4-2-7 d'après tes indices)
 const CODE = [4, 2, 7];  
 const WHEEL_COUNT = 3;
 
@@ -40,7 +40,7 @@ function updateGlobalHP(amount) {
   console.log(`Système mis à jour : ${amount > 0 ? '+' : ''}${amount}% (Total: ${currentHP}%)`);
 }
 
-// ========= UI BUILD =========
+// ========= CONSTRUCTION DES ROUES =========
 function buildWheels() {
   el.wheels.innerHTML = "";
 
@@ -83,25 +83,39 @@ function incWheel(i, delta) {
   render();
 }
 
-// ========= CHECK (VICTOIRE) =========
+// ========= VÉRIFICATION (VICTOIRE AVEC POP-UP) =========
 function checkCode() {
   if (!state.locked || state.redirecting) return;
 
   state.attempts++;
 
+  // Vérifie si le code est bon
   const ok = state.wheels.every((v, idx) => v === CODE[idx]);
 
   if (ok) {
-    // VICTOIRE : +5% de stabilité
+    // 1. VICTOIRE : On augmente la barre de vie de 5%
     updateGlobalHP(5);
 
+    // 2. Mise à jour visuelle du cadenas
     state.locked = false;
-    el.status.textContent = "✔ Cadenas déverrouillé. Retour aux archives…";
+    el.status.textContent = "✔ ACCÈS AUTORISÉ";
     el.status.style.color = "rgba(160,255,190,0.95)";
-    goHomeSoon(900);
+    
+    state.redirecting = true;
+    
+    // 3. Petit délai pour voir le message vert, puis POP-UP
+    setTimeout(() => {
+      // Le message d'alerte demandé
+      alert("ANOMALIE DÉTECTÉE...\n\nMessage du système : \"Trouvez l'erreur dans la page suivante.\"");
+      
+      // Une fois qu'on clique sur OK, on change de page
+      window.location.href = HOME_URL;
+    }, 200);
+    
     return;
   }
 
+  // Code faux
   el.status.textContent = "✖ Incorrect. Relis les indices.";
   el.status.style.color = "rgba(255,140,140,0.95)";
 }
@@ -129,7 +143,7 @@ function tickCountdown() {
   if (el.countdown) el.countdown.textContent = formatMMSS(left);
 
   if (left <= 0) {
-    // DÉFAITE (TEMPS ÉCOULÉ) : -10% de stabilité
+    // DÉFAITE (TEMPS ÉCOULÉ) : On perd 10%
     updateGlobalHP(-10);
 
     el.status.textContent = "⏳ Temps écoulé. Retour aux archives…";
@@ -138,12 +152,12 @@ function tickCountdown() {
   }
 }
 
-// ========= INIT =========
+// ========= INITIALISATION =========
 buildWheels();
 render();
 
 el.unlockBtn.addEventListener("click", checkCode);
 
-// tick toutes les 250ms (fluide et léger)
+// Lancer le timer
 tickCountdown();
 setInterval(tickCountdown, 250);

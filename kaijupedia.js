@@ -1,6 +1,44 @@
 window.addEventListener("DOMContentLoaded", () => {
   // ============================================================
-  // PARTIE 1 : BOUTON QUI FUIT (Archive)
+  // PARTIE 1 : HP / STABILITÉ
+  // ============================================================
+  const hpFill = document.getElementById("hpFill");
+  const hpText = document.getElementById("hpText");
+
+  function updateHPDisplay() {
+    let currentHP = localStorage.getItem("kaijuHP");
+
+    if (currentHP === null) {
+      currentHP = 50;
+      localStorage.setItem("kaijuHP", "50");
+    } else {
+      currentHP = parseInt(currentHP, 10);
+    }
+
+    currentHP = Math.max(0, Math.min(100, currentHP));
+
+    if (hpFill && hpText) {
+      hpFill.style.width = currentHP + "%";
+      hpText.textContent = currentHP + "%";
+
+      if (currentHP < 30) {
+        hpFill.style.background = "#f00";
+        hpFill.style.boxShadow = "0 0 15px #f00";
+      } else if (currentHP > 70) {
+        hpFill.style.background = "#4f4";
+        hpFill.style.boxShadow = "0 0 15px rgba(80,255,80,.35)";
+      } else {
+        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)";
+        hpFill.style.boxShadow = "0 0 12px rgba(182, 74, 42, 0.35)";
+      }
+    }
+  }
+
+  updateHPDisplay();
+  window.addEventListener("storage", updateHPDisplay);
+
+  // ============================================================
+  // PARTIE 2 : BOUTON QUI FUIT (si présent)
   // ============================================================
   const btn = document.getElementById("archivesBtn");
   const hero = document.querySelector(".hero");
@@ -18,7 +56,6 @@ window.addEventListener("DOMContentLoaded", () => {
         const hr = hero.getBoundingClientRect();
         const maxX = hr.width - btn.offsetWidth - PADDING * 2;
         const maxY = hr.height - btn.offsetHeight - PADDING * 2;
-
         if (maxX <= 0 || maxY <= 0) return;
 
         const x = PADDING + Math.random() * maxX;
@@ -39,7 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ============================================================
-  // PARTIE 2 : LE SYSTÈME "LIFT" (Soulever l'image)
+  // PARTIE 3 : LIFT (si présent)
   // ============================================================
   const lift = document.getElementById("kaijuLift");
   const cover = document.getElementById("kaijuCover");
@@ -47,257 +84,265 @@ window.addEventListener("DOMContentLoaded", () => {
   const go = document.getElementById("kaijuGo");
   const msg = document.getElementById("kaijuMsg");
 
-  // Si les éléments n'existent pas sur la page, on arrête ici pour éviter les erreurs
-  if (!lift || !cover || !input || !go || !msg) return;
+  if (lift && cover && input && go && msg) {
+    let dragging = false;
+    let startY = 0;
+    let current = 0;
+    let unlocked = false;
 
-  let dragging = false;
-  let startY = 0;
-  let current = 0;
-  let unlocked = false;
-
-  // Calculer combien on peut soulever (environ 70% de la hauteur)
-  function maxLiftPx() {
-    return Math.floor(lift.offsetHeight * 0.75);
-  }
-
-  function setCover(y) {
-    current = y;
-    cover.style.transform = `translateY(${y}px)`;
-  }
-
-  function unlock() {
-    unlocked = true;
-    lift.classList.add("is-unlocked");
-    setCover(-maxLiftPx()); // On bloque l'image en haut
-    cover.style.cursor = "default";
-    input.focus(); // On met le curseur dans la case texte
-    msg.textContent = "";
-  }
-
-  function onDown(clientY) {
-    if (unlocked) return;
-    dragging = true;
-    // On calcule la position de la souris par rapport à l'image
-    startY = clientY - current;
-    cover.style.transition = "none"; // On enlève l'animation pour que ça suive la souris instantanément
-  }
-
-  function onMove(clientY) {
-    if (!dragging || unlocked) return;
-
-    const maxLift = maxLiftPx();
-    let y = clientY - startY;
-
-    // On limite le mouvement : pas plus bas que 0, pas plus haut que maxLift
-    y = Math.min(0, Math.max(-maxLift, y));
-    setCover(y);
-
-    // Si on a soulevé à plus de 60%, ça se débloque tout seul
-    const progress = Math.abs(y) / maxLift;
-    if (progress >= 0.60) unlock();
-  }
-
-  function onUp() {
-    if (!dragging) return;
-    dragging = false;
-    cover.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)"; // Effet rebond
-
-    if (!unlocked) {
-      setCover(0); // Si on lâche trop tôt, ça redescend
-    }
-  }
-
-  // --- Événements Souris & Tactile ---
-  cover.addEventListener("pointerdown", (e) => {
-    e.preventDefault(); // Empêche de sélectionner l'image
-    cover.setPointerCapture(e.pointerId);
-    onDown(e.clientY);
-  });
-
-  cover.addEventListener("pointermove", (e) => {
-    if (dragging) e.preventDefault();
-    onMove(e.clientY);
-  });
-
-  cover.addEventListener("pointerup", onUp);
-  cover.addEventListener("pointercancel", onUp);
-
-  // --- Vérification du Mot de Passe ---
-  // --- Vérification du Mot de Passe ---
-  function tryWord() {
-    // On nettoie l'entrée et on met tout en majuscules pour comparer (plus facile)
-    const v = input.value.trim().toUpperCase();
-
-    // LE NOUVEAU CODE : K-739
-    if (v === "K-739") {
-      msg.style.color = "#4ff";
-      msg.textContent = "ACCÈS AUTORISÉ";
-      
-      // Redirection vers la page rituel
-      // D'après ton image, le chemin est : mini-jeux -> jeu1 -> rituel.html
-      setTimeout(() => {
-        window.location.href = "./mini-jeux/jeu1/rituel.html";
-      }, 800);
-      return;
+    function maxLiftPx() {
+      return Math.floor(lift.offsetHeight * 0.75);
     }
 
-    // Mot de passe faux
-    msg.style.color = "#f55";
-    msg.textContent = "REFUSÉ";
-    
-    // Petite animation de secousse
-    lift.animate([
-      { transform: "translateX(0)" },
-      { transform: "translateX(-5px)" },
-      { transform: "translateX(5px)" },
-      { transform: "translateX(0)" }
-    ], { duration: 300 });
-    
-    input.value = "";
-  }
-
-  go.addEventListener("click", tryWord);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") tryWord();
-  });
-  // ... (Ton code Lift finit ici) ...
-
-  // ============================================================
-  // PARTIE 3 : SYSTÈME DE HP (INTEGRITY)
-  // ============================================================
-  const hpFill = document.getElementById("hpFill");
-  const hpText = document.getElementById("hpText");
-
-  function updateHPDisplay() {
-    // 1. On récupère la valeur stockée (ou 50 par défaut)
-    let currentHP = localStorage.getItem("kaijuHP");
-    
-    if (currentHP === null) {
-      currentHP = 50;
-      localStorage.setItem("kaijuHP", 50);
-    } else {
-      currentHP = parseInt(currentHP);
+    function setCover(y) {
+      current = y;
+      cover.style.transform = `translateY(${y}px)`;
     }
 
-    // 2. Sécuriser les limites (0 à 100)
-    currentHP = Math.max(0, Math.min(100, currentHP));
+    function unlock() {
+      unlocked = true;
+      lift.classList.add("is-unlocked");
+      setCover(-maxLiftPx());
+      cover.style.cursor = "default";
+      input.focus();
+      msg.textContent = "";
+    }
 
-    // 3. Mettre à jour l'affichage
-    if (hpFill && hpText) {
-      hpFill.style.width = currentHP + "%";
-      hpText.textContent = currentHP + "%";
-      
-      // Changer la couleur selon la santé (Rouge si < 30%)
-      if (currentHP < 30) {
-        hpFill.style.background = "#f00"; 
-        hpFill.style.boxShadow = "0 0 15px #f00";
-      } else if (currentHP > 70) {
-        hpFill.style.background = "#4f4"; 
-      } else {
-        hpFill.style.background = "linear-gradient(90deg, #b64a2a, #f55)";
+    function onDown(clientY) {
+      if (unlocked) return;
+      dragging = true;
+      startY = clientY - current;
+      cover.style.transition = "none";
+    }
+
+    function onMove(clientY) {
+      if (!dragging || unlocked) return;
+      const maxLift = maxLiftPx();
+      let y = clientY - startY;
+      y = Math.min(0, Math.max(-maxLift, y));
+      setCover(y);
+      if (Math.abs(y) / maxLift >= 0.60) unlock();
+    }
+
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      cover.style.transition =
+        "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+      if (!unlocked) setCover(0);
+    }
+
+    cover.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      cover.setPointerCapture(e.pointerId);
+      onDown(e.clientY);
+    });
+
+    cover.addEventListener("pointermove", (e) => {
+      if (dragging) e.preventDefault();
+      onMove(e.clientY);
+    });
+
+    cover.addEventListener("pointerup", onUp);
+    cover.addEventListener("pointercancel", onUp);
+
+    function tryWord() {
+      const v = input.value.trim().toUpperCase();
+
+      if (v === "K-739") {
+        msg.style.color = "#4ff";
+        msg.textContent = "ACCÈS AUTORISÉ";
+        setTimeout(() => {
+          window.location.href = "./mini-jeux/jeu4/index.html";
+        }, 800);
+        return;
       }
+
+      msg.style.color = "#f55";
+      msg.textContent = "REFUSÉ";
+
+      lift.animate(
+        [
+          { transform: "translateX(0)" },
+          { transform: "translateX(-5px)" },
+          { transform: "translateX(5px)" },
+          { transform: "translateX(0)" },
+        ],
+        { duration: 300 }
+      );
+      input.value = "";
     }
-  }
 
-  // Lancer l'affichage au chargement de la page
-  updateHPDisplay();
-
-// --- Fin de la correction, juste avant la fermeture ---
-});
-(() => {
-  const phone = document.getElementById("phoneCall");
-  const target = document.getElementById("targetimg");
-
-  if (!phone || !target) return;
-
-  let running = false;
-
-  function getCenterRect(el) {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  }
-
-  function createShield() {
-    const shield = document.createElement("div");
-    shield.className = "possession-shield";
-    document.body.appendChild(shield);
-    return shield;
-  }
-
-  function createFakeCursor(startX, startY) {
-    const c = document.createElement("div");
-    c.className = "possessed-cursor";
-    c.style.left = `${startX}px`;
-    c.style.top = `${startY}px`;
-    document.body.appendChild(c);
-    return c;
-  }
-
-  function animateCursor(cursorEl, from, to, duration = 900) {
-    const start = performance.now();
-
-    return new Promise((resolve) => {
-      function tick(t) {
-        const p = Math.min(1, (t - start) / duration);
-
-        // easing smooth (easeInOut)
-        const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-
-        const x = from.x + (to.x - from.x) * ease;
-        const y = from.y + (to.y - from.y) * ease;
-
-        cursorEl.style.left = `${x}px`;
-        cursorEl.style.top = `${y}px`;
-
-        if (p < 1) requestAnimationFrame(tick);
-        else resolve();
-      }
-      requestAnimationFrame(tick);
+    go.addEventListener("click", tryWord);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") tryWord();
     });
   }
 
-  async function possessAndGuide() {
-    if (running) return;
-    running = true;
+  const decryptLink = document.getElementById("decryptLink");
 
-    // position de départ = centre du téléphone
-    const from = getCenterRect(phone);
-    const to = getCenterRect(target);
+if (decryptLink) {
+  decryptLink.addEventListener("click", () => {
+    // Redirection vers ton mini-jeu de decrypt
+    window.location.href = "http://127.0.0.1:5500/mini-jeux/jeu3/decrypt.html";
+  });
+}
 
-    document.body.classList.add("possession-lock");
+});
 
-    const shield = createShield();        // bloque les clics
-    const fakeCursor = createFakeCursor(from.x, from.y);
 
-    // petit délai “prise de contrôle”
-    await new Promise((r) => setTimeout(r, 180));
+  // ============================================================
+  // PARTIE 4 : POSSESSION TÉLÉPHONE (safe)
+  // ============================================================
+  try {
+    const phone = document.getElementById("phoneCall");
+    const target = document.getElementById("targetimg"); // <- ton image a cet id dans ton HTML
+    let running = false;
 
-    // animation vers l’image cible
-    await animateCursor(fakeCursor, from, to, 900);
+    if (phone && target) {
+      function getCenterRect(el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
 
-    // effet final sur l’image (flash léger)
-    target.animate(
-      [{ filter: "brightness(1)" }, { filter: "brightness(1.25)" }, { filter: "brightness(1)" }],
-      { duration: 500, easing: "ease-out" }
-    );
+      function createShield() {
+        const shield = document.createElement("div");
+        shield.className = "possession-shield";
+        document.body.appendChild(shield);
+        return shield;
+      }
 
-    // OPTION : déclencher ton mini-jeu ici (rediriger)
-    // window.location.href = "mini_jeu2.html";
+      function createFakeCursor(x, y) {
+        const c = document.createElement("div");
+        c.className = "possessed-cursor";
+        c.style.left = `${x}px`;
+        c.style.top = `${y}px`;
+        document.body.appendChild(c);
+        return c;
+      }
 
-    // cleanup
-    await new Promise((r) => setTimeout(r, 250));
-    fakeCursor.remove();
-    shield.remove();
-    document.body.classList.remove("possession-lock");
+      function animateCursor(cursorEl, from, to, duration = 900) {
+        const start = performance.now();
 
-    running = false;
+        return new Promise((resolve) => {
+          function tick(t) {
+            const p = Math.min(1, (t - start) / duration);
+            const ease =
+              p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+
+            const x = from.x + (to.x - from.x) * ease;
+            const y = from.y + (to.y - from.y) * ease;
+
+            cursorEl.style.left = `${x}px`;
+            cursorEl.style.top = `${y}px`;
+
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          }
+          requestAnimationFrame(tick);
+        });
+      }
+
+      async function possessAndGuide() {
+        if (running) return;
+        running = true;
+
+        const from = getCenterRect(phone);
+        const to = getCenterRect(target);
+
+        document.body.classList.add("possession-lock");
+        const shield = createShield();
+        const fakeCursor = createFakeCursor(from.x, from.y);
+
+        await new Promise((r) => setTimeout(r, 180));
+        await animateCursor(fakeCursor, from, to, 900);
+
+        target.animate(
+          [
+            { filter: "brightness(1)" },
+            { filter: "brightness(1.25)" },
+            { filter: "brightness(1)" },
+          ],
+          { duration: 500, easing: "ease-out" }
+        );
+
+        // Ici tu peux déclencher mini-jeu 2 si tu veux :
+        // window.location.href = "./mini-jeux/jeu2/xxx.html";
+
+        await new Promise((r) => setTimeout(r, 250));
+        fakeCursor.remove();
+        shield.remove();
+        document.body.classList.remove("possession-lock");
+
+        running = false;
+      }
+
+      phone.addEventListener("mouseenter", possessAndGuide);
+      phone.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") possessAndGuide();
+      });
+    }
+  } catch (e) {
+    console.warn("Possession téléphone désactivée :", e);
+  }
+; // ✅ IMPORTANT : pas de () ici !
+
+// ============================================================
+// PARTIE 5 : TITRE CORRIGIBLE + REDIRECTION
+// ============================================================
+(() => {
+  const display = document.getElementById("heroTitleDisplay");
+  const input = document.getElementById("heroTitleInput");
+  if (!display || !input) return;
+
+  const WRONG = "KAJIUPEDIA";
+  const RIGHT = "KAIJUPEDIA";
+
+  display.textContent = WRONG;
+
+  const normalize = (s) => (s || "").trim().toUpperCase();
+
+  function openEdit() {
+    display.style.display = "none";
+    input.style.display = "inline-block";
+    input.classList.remove("is-bad");
+    input.value = "";
+    input.focus();
   }
 
-  // Déclenchement au survol
-  phone.addEventListener("mouseenter", possessAndGuide);
+  function closeEdit() {
+    input.style.display = "none";
+    display.style.display = "inline";
+  }
 
-  // Bonus : déclenchement au clavier (accessibilité)
-  phone.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") possessAndGuide();
+  function validate() {
+    const v = normalize(input.value);
+
+    if (v === RIGHT) {
+      display.textContent = RIGHT;
+      closeEdit();
+      window.location.href = "./mini-jeux/jeu56.html"; // <- ton mini-jeu
+    } else {
+      input.classList.add("is-bad");
+      input.select();
+    }
+  }
+
+  display.addEventListener("click", openEdit);
+  display.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") openEdit();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") validate();
+    if (e.key === "Escape") closeEdit();
+  });
+
+  document.addEventListener("click", (e) => {
+    const editing = input.style.display === "inline-block";
+    if (!editing) return;
+    if (e.target === input || e.target === display) return;
+    closeEdit();
   });
 })();
+

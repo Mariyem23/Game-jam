@@ -931,3 +931,63 @@ body.possession-lock {
   text-align: right;
   text-shadow: 0 0 5px var(--accent);
 }
+
+.decrypt-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+
+  color: var(--muted);
+  font-style: italic;
+
+  transition: color 0.25s ease;
+}
+
+.decrypt-link .arrow {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.25s ease;
+  color: var(--accent2);
+}
+
+/* Hover */
+.decrypt-link:hover {
+  color: var(--accent2);
+}
+
+.decrypt-link:hover .arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ===== Titre corrigible ===== */
+.heroTitleDisplay {
+  cursor: pointer;
+  user-select: none;
+}
+
+.heroTitleInput {
+  display: none;
+  width: min(820px, 92vw);
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  text-align: center;
+  text-transform: uppercase;
+  /* IMPORTANT : hérite du style de .hero__title */
+  font: inherit;
+  letter-spacing: inherit;
+  text-shadow: inherit;
+}
+
+.heroTitleInput.is-bad {
+  outline: 2px solid rgba(255, 70, 70, 0.35);
+  color: #6f2418;
+  border-radius: 10px;
+  padding: 6px 10px;
+  filter: drop-shadow(0 0 12px rgba(255, 70, 70, 0.2));
+
+}
