@@ -8,274 +8,250 @@
     <title>Kaiju — Terrain</title>
 
     <style>
-       :root{
-  --bg:#070707;
-  --ink:#e7dcc7;
-  --muted:rgba(231,220,199,.75);
-  --line:rgba(200,160,110,.28);
-  --accent:#8c2f1f;
-  --accent2:#b64a2a;
+        :root {
+            --bg: #070707;
+            --ink: #e7dcc7;
+            --muted: rgba(231, 220, 199, .75);
+            --line: rgba(200, 160, 110, .28);
+            --accent: #8c2f1f;
+            --accent2: #b64a2a;
 
-  --shadow: 0 18px 60px rgba(0,0,0,.55);
-  --panelA: rgba(0,0,0,.55);
-  --panelB: rgba(0,0,0,.84);
+            --shadow: 0 18px 60px rgba(0, 0, 0, .55);
+            --panelA: rgba(0, 0, 0, .55);
+            --panelB: rgba(0, 0, 0, .84);
 
-  --radius: 22px;
-  --btnRadius: 12px;
-}
+            --radius: 22px;
+            --btnRadius: 12px;
+        }
 
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
 
-body{
-  background:
-    radial-gradient(1400px 700px at 50% -10%,
-      rgba(255, 190, 120, 0.45),
-      transparent 55%
-    ),
-    radial-gradient(1200px 900px at 50% 65%,
-      rgba(255, 140, 90, 0.30),
-      transparent 65%
-    ),
-    radial-gradient(800px 600px at 50% 100%,
-      rgba(255, 220, 170, 0.18),
-      transparent 70%
-    ),
-    #0a0a0a;
-}
+        html,
+        body {
+            height: 100%
+        }
 
-/* ton app prend tout l’écran */
-.app{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  padding: 18px;
-  gap: 14px;
-}
+        body {
+            background:
+                radial-gradient(1400px 700px at 50% -10%,
+                    rgba(255, 190, 120, 0.45),
+                    transparent 55%),
+                radial-gradient(1200px 900px at 50% 65%,
+                    rgba(255, 140, 90, 0.30),
+                    transparent 65%),
+                radial-gradient(800px 600px at 50% 100%,
+                    rgba(255, 220, 170, 0.18),
+                    transparent 70%),
+                #0a0a0a;
+        }
 
-/* ===== HUD ===== */
-.hud{
-  flex:0 0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 14px;
-  padding: 18px 18px 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(200,160,110,.22);
-  background: linear-gradient(to bottom, var(--panelA), var(--panelB));
-  box-shadow: var(--shadow);
-  position: relative;
-  overflow:hidden;
-}
+        /* ton app prend tout l’écran */
+        .app {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 18px;
+            gap: 14px;
+        }
 
-.hud::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(600px 260px at 20% 0%, rgba(182,74,42,.12), transparent 60%),
-    radial-gradient(700px 280px at 80% 30%, rgba(140,47,31,.10), transparent 65%);
-  pointer-events:none;
-}
+        /* ===== HUD ===== */
+        .hud {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 18px 18px 14px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(200, 160, 110, .22);
+            background: linear-gradient(to bottom, var(--panelA), var(--panelB));
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
 
-.hud-left,.hud-right{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  flex-wrap:wrap;
-  position:relative;
-  z-index:1;
-}
+        .hud::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(600px 260px at 20% 0%, rgba(182, 74, 42, .12), transparent 60%),
+                radial-gradient(700px 280px at 80% 30%, rgba(140, 47, 31, .10), transparent 65%);
+            pointer-events: none;
+        }
 
-/* tes “pills” deviennent des mini-panneaux */
-.pill{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(200,160,110,.20);
-  background: rgba(0,0,0,.32);
-  color: rgba(255,255,255,.86);
-  backdrop-filter: blur(6px);
-}
+        .hud-left,
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
 
-/* objectif = style titre */
-.objective{
-  font-family: "Cinzel", ui-serif, Georgia, serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-size: 12px;
-  color: rgba(255,255,255,.82);
-  min-width: min(620px, 70vw);
-}
+        /* tes “pills” deviennent des mini-panneaux */
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(200, 160, 110, .20);
+            background: rgba(0, 0, 0, .32);
+            color: rgba(255, 255, 255, .86);
+            backdrop-filter: blur(6px);
+        }
 
-/* énergie */
-.gem{
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: linear-gradient(to bottom, rgba(180,90,60,.9), rgba(100,35,25,.9));
-  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
-  transform:none;
-}
+        /* objectif = style titre */
+        .objective {
+            font-family: "Cinzel", ui-serif, Georgia, serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: rgba(255, 255, 255, .82);
+            min-width: min(620px, 70vw);
+        }
 
-.energyStack{display:flex;flex-direction:column;gap:6px;min-width:140px}
-.energyNums{
-  display:flex;
-  align-items:baseline;
-  gap:8px;
-  font-family: "Cinzel", ui-serif, Georgia, serif;
-  letter-spacing: 2px;
-  font-size: 11px;
-}
-.energyNums b{
-  font-size: 14px;
-  color: rgba(255,255,255,.92);
-}
+        /* énergie */
+        .gem {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: linear-gradient(to bottom, rgba(180, 90, 60, .9), rgba(100, 35, 25, .9));
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+            transform: none;
+        }
 
-.energyBar{
-  width: 160px;
-  height: 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(200,160,110,.20);
-  background: rgba(0,0,0,.35);
-  overflow:hidden;
-}
-.energyFill{
-  height:100%;
-  width:0%;
-  background: linear-gradient(to right, rgba(182,74,42,.25), rgba(182,74,42,.95));
-  transition: width 180ms ease;
-}
+        .energyStack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 140px
+        }
 
-/* ===== BOUTONS ===== */
-.btn{
-  cursor:pointer;
-  height: 42px;
-  padding: 0 14px;
-  border-radius: var(--btnRadius);
-  font-family: "Cinzel", ui-serif, Georgia, serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: #5c291f;
-  color: #f1e6cf;
-  border: 1px solid rgba(138,111,76,.60);
-  box-shadow: 0 14px 40px rgba(0,0,0,.45);
-}
+        .energyNums {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-family: "Cinzel", ui-serif, Georgia, serif;
+            letter-spacing: 2px;
+            font-size: 11px;
+        }
 
-.btn:hover{filter:brightness(1.06); transform: translateY(-1px)}
-.btn:active{transform: translateY(0); filter:brightness(.98)}
+        .energyNums b {
+            font-size: 14px;
+            color: rgba(255, 255, 255, .92);
+        }
 
-/* ===== STAGE / CANVAS ===== */
-.stage{
-  flex:1 1 auto;
-  min-height:0;
-  border-radius: var(--radius);
-  border: 1px solid rgba(220,180,120,.28);
-  background: rgba(10,10,10,.55);
-  box-shadow:
-    0 18px 60px rgba(0,0,0,.55),
-    inset 0 0 120px rgba(180,90,60,.08);
-  overflow:hidden;
-  position:relative;
-}
+        .energyBar {
+            width: 160px;
+            height: 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(200, 160, 110, .20);
+            background: rgba(0, 0, 0, .35);
+            overflow: hidden;
+        }
 
-.stage::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(900px 420px at 50% 30%,
-      rgba(200,100,70,.25),
-      transparent 55%
-    ),
-    radial-gradient(900px 700px at 50% 90%,
-      rgba(0,0,0,0),
-      rgba(0,0,0,.35)
-    );
-  pointer-events:none;
-}
+        .energyFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, rgba(182, 74, 42, .25), rgba(182, 74, 42, .95));
+            transition: width 180ms ease;
+        }
 
-canvas{
-  width:100%;
-  height:100%;
-  display:block;
-}
+        /* ===== BOUTONS ===== */
+        .btn {
+            cursor: pointer;
+            height: 42px;
+            padding: 0 14px;
+            border-radius: var(--btnRadius);
+            font-family: "Cinzel", ui-serif, Georgia, serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: #5c291f;
+            color: #f1e6cf;
+            border: 1px solid rgba(138, 111, 76, .60);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, .45);
+        }
 
-/* ===== OVERLAY FIN DE JEU (NOUVEAU) ===== */
-#gameOverOverlay {
-    display: none; /* Caché par défaut */
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    text-align: center;
-    backdrop-filter: blur(5px);
-}
+        .btn:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px)
+        }
 
-.end-card {
-    background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
-    border: 2px solid var(--accent);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 0 30px rgba(140, 47, 31, 0.4);
-    max-width: 500px;
-}
+        .btn:active {
+            transform: translateY(0);
+            filter: brightness(.98)
+        }
 
-.end-title {
-    font-size: 32px;
-    color: #fff;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-}
+        /* ===== STAGE / CANVAS ===== */
+        .stage {
+            flex: 1 1 auto;
+            min-height: 0;
+            border-radius: var(--radius);
+            border: 1px solid rgba(220, 180, 120, .28);
+            background: rgba(10, 10, 10, .55);
+            box-shadow:
+                0 18px 60px rgba(0, 0, 0, .55),
+                inset 0 0 120px rgba(180, 90, 60, .08);
+            overflow: hidden;
+            position: relative;
+        }
 
-.end-msg {
-    color: #e7dcc7;
-    font-size: 16px;
-    margin-bottom: 25px;
-    line-height: 1.5;
-}
+        .stage::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(900px 420px at 50% 30%,
+                    rgba(200, 100, 70, .25),
+                    transparent 55%),
+                radial-gradient(900px 700px at 50% 90%,
+                    rgba(0, 0, 0, 0),
+                    rgba(0, 0, 0, .35));
+            pointer-events: none;
+        }
 
-.end-btn {
-    display: inline-block;
-    padding: 15px 30px;
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    font-family: "Cinzel", serif;
-    font-weight: bold;
-    letter-spacing: 2px;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
-    transition: all 0.2s;
-    cursor: pointer;
-}
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
 
-.end-btn:hover {
-    background: var(--accent2);
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(182,74,42,0.6);
-}
-/* responsive */
-@media (max-width:720px){
-  body{overflow:hidden}
-  .app{padding:12px; gap:12px}
-  .objective{min-width:0}
-  .energyBar{width:140px}
-}
+            /* ✅ boost luminosité/contraste sans toucher au JS */
+            filter: brightness(1.25) contrast(1.12) saturate(1.18);
+        }
+
+        /* responsive */
+        @media (max-width:720px) {
+            body {
+                overflow: hidden
+            }
+
+            .app {
+                padding: 12px;
+                gap: 12px
+            }
+
+            .objective {
+                min-width: 0
+            }
+
+            .energyBar {
+                width: 140px
+            }
+        }
     </style>
 </head>
 
 <body>
     <!-- Musique de fond -->
     <audio id="bg-music" src="../../assets/fond.mp3" autoplay loop></audio>
-    
+
     <!-- Son Kaiju apparition -->
     <audio id="sfx-kaiju-in" src="son/apparition.mp3" preload="auto"></audio>
     <!-- Son Kaiju disparition -->
@@ -353,7 +329,7 @@ canvas{
             const uiSelected = document.getElementById("selected"); // peut être null
             const btnToggleEdit = document.getElementById("toggleEdit");
             const btnReset = document.getElementById("reset");
-            
+
             // ===== SFX KAIJU =====
             const sfxKaijuIn = document.getElementById("sfx-kaiju-in");
             const sfxKaijuOut = document.getElementById("sfx-kaiju-out");
